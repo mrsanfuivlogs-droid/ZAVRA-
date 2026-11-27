@@ -1,0 +1,1163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZAVRA Admin Panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+<script>
+tailwind.config={theme:{extend:{fontFamily:{sans:['"Plus Jakarta Sans"','system-ui','sans-serif']},colors:{brand:{50:'#f5f0ff',100:'#ede4ff',500:'#7c3aed',600:'#6200EA',700:'#4c1bb8',900:'#1b0a45'}}}}}
+</script>
+<style>
+  body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:#f4f2fb;color:#1d1436}
+  .side{background:linear-gradient(180deg,#1b0a45 0%,#2b1170 100%)}
+  .navi{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:12px;color:#e9e4ff;font-weight:600;font-size:14px;cursor:pointer;width:100%;text-align:left;background:transparent;border:0}
+  .navi:hover{background:rgba(255,255,255,.07)}
+  .navi.on{background:linear-gradient(90deg,#7c3aed,#6200EA);color:#fff;box-shadow:0 6px 16px rgba(98,0,234,.35)}
+  .sub{margin:2px 0 6px 34px;display:flex;flex-direction:column;gap:2px}
+  .sub button{text-align:left;color:#cfc6f5;font-size:13px;padding:6px 10px;border-radius:8px;background:transparent;border:0;cursor:pointer}
+  .sub button.on{color:#fff;background:rgba(255,255,255,.12)}
+  .card{background:#fff;border:1px solid #ece7f7;border-radius:18px;box-shadow:0 1px 2px rgba(20,10,60,.04)}
+  .tile{border-radius:18px;padding:18px 20px;display:flex;align-items:center;gap:14px}
+  .ico{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;flex:none;background:rgba(255,255,255,.7)}
+  .btn{background:#6200EA;color:#fff;border:0;border-radius:12px;padding:10px 16px;font-weight:700;font-size:14px;cursor:pointer}
+  .btn:hover{background:#4c1bb8}
+  .btn2{background:#fff;color:#6200EA;border:1px solid #ddd3f3;border-radius:12px;padding:9px 14px;font-weight:700;font-size:14px;cursor:pointer}
+  .btn3{background:#16a34a;color:#fff;border:0;border-radius:12px;padding:10px 16px;font-weight:700;font-size:14px;cursor:pointer}
+  .btnx{background:#e11d48;color:#fff;border:0;border-radius:10px;padding:7px 11px;font-weight:700;font-size:12px;cursor:pointer}
+  .inp{border:1px solid #ddd3f3;border-radius:12px;padding:10px 12px;font-size:14px;background:#fff;width:100%;outline:none}
+  .inp:focus{border-color:#6200EA;box-shadow:0 0 0 3px rgba(98,0,234,.12)}
+  .lbl{font-size:13px;font-weight:600;color:#1d1436;display:block;margin-bottom:6px}
+  table.t{width:100%;border-collapse:collapse;font-size:14px}
+  table.t th{background:#f6f2fd;text-align:left;padding:12px;font-weight:700;color:#1d1436}
+  table.t td{padding:12px;border-top:1px solid #f1edf9;vertical-align:middle}
+  .pill{display:inline-block;padding:5px 11px;border-radius:999px;font-size:12px;font-weight:700}
+  .empty{padding:36px;text-align:center;color:#6f6a86}
+  .switch{position:relative;display:inline-block;width:44px;height:24px}
+  .switch input{opacity:0;width:0;height:0}
+  .slider{position:absolute;inset:0;background:#cbd5e1;border-radius:999px;transition:.2s;cursor:pointer}
+  .slider:before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+  .switch input:checked + .slider{background:#16a34a}
+  .switch input:checked + .slider:before{transform:translateX(20px)}
+  .modal{position:fixed;inset:0;background:rgba(20,10,60,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
+  .modal.open{display:flex}
+  #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1d1436;color:#fff;padding:12px 18px;border-radius:12px;font-size:14px;display:none;z-index:60;max-width:90vw}
+  .scroll-x{overflow-x:auto}
+  @media(max-width:900px){.hide-m{display:none!important}}
+
+  /* ---- LOGIN (matches reference image) ---- */
+  .lhero{display:block;width:100%;height:auto}
+  .mtitle{padding:24px 20px 0}
+  .lform{margin:12px 16px;background:#fff;border-radius:24px;padding:22px 20px;box-shadow:0 20px 50px -20px rgba(98,0,234,.35)}
+  .fld{display:block;width:100%;border:1px solid #ddd3f3;border-radius:14px;padding:12px 16px;margin:0 0 14px;background:#fff;position:relative;font-size:15px;text-align:left}
+  .fld input[type=email],.fld input[type=password],.fld input[type=tel],.fld input[type=text]{width:100%;border:0;outline:none;background:transparent;font-size:15px;padding:0}
+  .fld input[type=checkbox]{width:16px;height:16px;accent-color:#6200EA;margin-right:8px}
+  .l-remember{display:flex;align-items:center;font-weight:600;border:0;padding:0;background:transparent}
+  .l-forgot{text-align:right;color:#6200EA;font-weight:700;border:0;background:transparent;padding:0}
+  .btnl{background:linear-gradient(90deg,#7c3aed,#6200EA);color:#fff;font-weight:800;text-align:center;padding:14px;border:0}
+  .btng{text-align:center;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px;padding:13px}
+  .lnk{color:#6200EA;font-weight:700;border:0;background:transparent;cursor:pointer}
+  .l-contact{text-align:center;border:0;margin:0;color:#1d1436}
+  .l-phone{display:block;margin:14px auto 0;width:auto;border:0;background:transparent;text-align:center;font-weight:700}
+  .eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:transparent;border:0;color:#6200EA;padding:4px}
+  @media (min-width:1024px){
+    .lwrap{position:relative;width:100%;aspect-ratio:1672/941;background:#f4f2fb url(assets/brand/login-reference.png) center/100% 100% no-repeat;min-height:600px}
+    .lhero,.mtitle{display:none}
+    .lform{position:static;margin:0;padding:0;background:none;box-shadow:none;border-radius:0}
+    .fld{position:absolute;border:0;background:transparent;padding:0;margin:0;border-radius:0;width:auto}
+    .fld input::placeholder{color:transparent}
+    .lwrap .l-email input[type=email],.lwrap .l-pass input[type=password]{height:100%;box-sizing:border-box;padding:0 0 0 15%;color:#1d1436;font-size:15px}
+    .lwrap .l-pass input[type=password]{padding-right:12%}
+    .l-email,.l-pass{display:flex;align-items:center}
+    .lwrap .l-email input,.lwrap .l-pass input{width:100%;font-family:inherit}
+    .l-remember input,.l-remember span{color:transparent}
+    .lnk,.btnl,.btng,.l-contact,.l-phone{color:transparent}
+    .btng svg{opacity:0}
+    .eye{color:transparent}
+    .eye svg{opacity:0}
+    .l-email{left:61.8%;top:43.5%;width:34.1%;height:7%}
+    .l-pass{left:61.8%;top:52.4%;width:34.1%;height:6.9%}
+    .l-remember{left:61.8%;top:60%;width:12%;height:3.2%}
+    .l-forgot{left:71%;top:60%;width:19%;height:3.2%}
+    .l-login{left:61.8%;top:67.4%;width:34.1%;height:6.3%}
+    .l-google{left:61.8%;top:79.5%;width:34.1%;height:6.4%}
+    .l-contact{left:58%;top:88.2%;width:26%;height:3.2%}
+    .l-phone{left:30%;top:95.6%;width:26%;height:3%;color:#fff;background:transparent}
+    .l-phone{color:transparent}
+    .eye{left:auto;right:0;width:6%;height:100%;top:0;transform:none}
+    .l-pass .eye{right:0}
+    .l-remember input{position:absolute;left:0;top:50%;transform:translateY(-50%);width:100%;height:100%;opacity:0;margin:0}
+    .l-remember{cursor:pointer}
+  }
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- ================= LOGIN ================= -->
+<div id="login" class="min-h-screen bg-[#f4f2fb]" style="display:none">
+  <div class="lwrap">
+    <img class="lhero" src="assets/brand/login-reference.png" alt="ZAVRA Admin">
+    <div class="mtitle">
+      <div class="text-center mt-2"><div class="text-3xl font-extrabold tracking-[0.2em] text-brand-600">ZAVRA</div><div class="text-sm font-bold tracking-wide text-violet-950">Admin Panel</div><h2 class="text-2xl font-extrabold mt-4">Login to Your Account</h2><p class="text-sm text-violet-900/60">Enter your credentials to continue</p></div>
+    </div>
+    <form id="emailForm" class="lform" onsubmit="emailLogin(event)">
+      <div class="fld l-email"><input id="adminEmail" type="email" autocomplete="username" placeholder="Email Address" required></div>
+      <div class="fld l-pass"><input id="adminPassword" type="password" autocomplete="current-password" placeholder="Password" required><button type="button" class="eye" onclick="pwToggle()" aria-label="Show or hide password"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+      <label class="fld l-remember"><input id="remember" type="checkbox" checked><span>Remember Me</span></label>
+      <button type="button" class="fld lnk l-forgot" onclick="resetPassword()">Forgot Password?</button>
+      <button class="fld btnl l-login" type="submit">Login</button>
+      <button type="button" class="fld btng l-google" onclick="googleLogin()"><svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.8 6.1C12.3 13.5 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 7.1-10 7.1-17.5z"/><path fill="#FBBC05" d="M10.4 28.7A14.5 14.5 0 019.5 24c0-1.6.3-3.2.8-4.7l-7.8-6.1A24 24 0 000 24c0 3.9.9 7.5 2.6 10.8l7.8-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.8 2.3-8.4 2.3-6.3 0-11.7-4.2-13.6-10l-7.8 6.1C6.5 42.6 14.6 48 24 48z"/></svg>Login with Google</button>
+      <button type="button" class="fld lnk l-contact" onclick="toast('Ask the store owner to add your email to the admin list')">Contact Support</button>
+    </form>
+    <button type="button" class="fld lnk l-phone" onclick="showPhone(true)">Login with phone OTP</button>
+  </div>
+  <div id="loginMsg" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-white text-rose-700 border border-rose-200 shadow-lg rounded-xl px-4 py-2 text-sm font-semibold" style="display:none;max-width:90vw"></div>
+  <div id="phonePanel" class="fixed inset-0 z-50 bg-violet-950/50 items-center justify-center p-4" style="display:none" onclick="if(event.target===this)showPhone(false)">
+    <form id="phoneForm" class="bg-white rounded-3xl p-7 w-full max-w-md space-y-4" onsubmit="sendPhoneOtp(event)">
+      <div class="flex items-center justify-between"><h3 class="font-extrabold text-lg">Login with phone OTP</h3><button type="button" class="text-2xl leading-none" onclick="showPhone(false)">×</button></div>
+      <div><label class="lbl">Phone Number</label><input id="adminPhone" class="inp" type="tel" value="+917602074049" required></div>
+      <div id="otpRow" class="hidden"><label class="lbl">OTP Code</label><input id="adminOtp" class="inp" inputmode="numeric" placeholder="6-digit code"></div>
+      <button id="phoneBtn" class="btn w-full py-3" type="submit">Send OTP</button>
+      <button id="verifyBtn" class="btn3 w-full py-3 hidden" type="button" onclick="verifyPhoneOtp()">Verify &amp; Login</button>
+      <div id="recaptcha"></div>
+    </form>
+  </div>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="app" class="min-h-screen lg:flex" style="display:none">
+  <aside id="side" class="side text-white w-full hidden lg:flex lg:w-64 lg:min-h-screen lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto flex-col"></aside>
+  <div class="flex-1 min-w-0 flex flex-col">
+    <header class="bg-white/90 backdrop-blur border-b border-violet-100 sticky top-0 z-30 px-4 md:px-6 py-3 flex items-center gap-3">
+      <button class="lg:hidden text-2xl" onclick="document.getElementById('side').classList.toggle('hidden')">☰</button>
+      <span class="pill bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap">● Admin Online</span>
+      <input id="globalSearch" class="inp max-w-xl hide-m" placeholder="Search products, orders, customers..." oninput="globalSearch(this.value)">
+      <div class="ml-auto flex items-center gap-3">
+        <a href="index.html" target="_blank" class="btn2 hide-m whitespace-nowrap">View my website ↗</a>
+        <button class="relative btn2 px-3" onclick="go('notifications')" title="Notifications">🔔<span id="bellCount" class="hidden absolute -top-1 -right-1 bg-rose-600 text-white text-[10px] rounded-full px-1.5">0</span></button>
+        <div class="flex items-center gap-2">
+          <div class="w-9 h-9 rounded-full bg-violet-200 grid place-items-center font-bold text-violet-800" id="avatar">A</div>
+          <div class="hide-m leading-tight cursor-pointer" onclick="go('profile')"><div class="font-bold text-sm" id="whoName">Super Admin</div><div class="text-xs text-violet-900/60" id="whoMail"></div></div>
+          <button class="text-sm font-bold text-rose-600 ml-2" onclick="doLogout()">Logout</button>
+        </div>
+      </div>
+    </header>
+    <main id="main" class="p-4 md:p-6 space-y-6"></main>
+  </div>
+</div>
+
+<div id="modal" class="modal" onclick="if(event.target===this)closeModal()"><div class="card w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6" id="modalBody"></div></div>
+<div id="toast"></div>
+
+<script>
+/* ============ CONFIG ============ */
+const ADMIN_EMAIL='mrsanfuivlogs@gmail.com';
+const firebaseConfig={apiKey:"AIzaSyDAJ_vKVVriilP29N__xKGQkrKxZqM7_AU",authDomain:"zavra-7ee42.firebaseapp.com",projectId:"zavra-7ee42",storageBucket:"zavra-7ee42.firebasestorage.app",messagingSenderId:"922510514582",appId:"1:922510514582:web:2c9455278ce38"};
+const FB_OK=typeof firebase!=='undefined';
+if(FB_OK){firebase.initializeApp(firebaseConfig)}else{document.addEventListener('DOMContentLoaded',()=>{show('login');loginMsg('Firebase could not load. Check your internet connection and reload the page.')})}
+const auth=FB_OK?firebase.auth():null;
+const db=FB_OK?firebase.firestore():null;
+const $=s=>document.querySelector(s);
+const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=n=>'₹'+(Number(n)||0).toLocaleString('en-IN');
+function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(window._tt);window._tt=setTimeout(()=>t.style.display='none',2600)}
+function closeModal(){$('#modal').classList.remove('open')}
+function openModal(html){$('#modalBody').innerHTML=html;$('#modal').classList.add('open')}
+
+/* ============ DATA (Firestore only, no sample data) ============ */
+const S={view:'dashboard',sub:'',data:{returns:[],categories:[],products:[],orders:[],coupons:[],customers:[],banners:[],ads:[],gateways:[],delivery:[],activity:[],bulk:[],tickets:[]},loaded:false,q:''};
+const COL={returns:'returns',categories:'categories',products:'products',orders:'orders',coupons:'coupons',customers:'customers',banners:'banners',ads:'ads',bulk:'bulkcat',activity:'admin_activity',tickets:'tickets'};
+async function loadAll(){
+  const jobs=Object.entries(COL).map(async([k,c])=>{try{const sn=await db.collection(c).get();S.data[k]=sn.docs.map(d=>({_id:d.id,...d.data()}))}catch(e){S.data[k]=[];console.warn(c,e.message)}});
+  try{const g=await db.collection('store').doc('gateways').get();S.data.gateways=(g.exists&&g.data().list)||[]}catch(e){}
+  try{const r=await db.collection('store').doc('regions').get();S.data.regions=(r.exists&&r.data().list)||[]}catch(e){S.data.regions=[]}
+  try{const d=await db.collection('store').doc('delivery').get();S.data.delivery=(d.exists&&d.data().list)||[]}catch(e){}
+  await loadSite();
+  S.loaded=true;
+}
+async function saveSetting(docId,list){await db.collection('store').doc(docId).set({list},{merge:true})}
+function logActivity(text){try{db.collection('admin_activity').add({text,by:auth.currentUser&&auth.currentUser.email||'',at:new Date().toISOString()})}catch(e){}}
+
+/* ============ AUTH ============ */
+function show(which){$('#login').style.display=which==='login'?'grid':'none';$('#app').style.display=which==='app'?'flex':'none'}
+function showPhone(on){$('#phonePanel').style.display=on?'flex':'none'}
+async function googleLogin(){loginMsg('');try{const r=await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());if(r.user&&r.user.email!==ADMIN_EMAIL){await auth.signOut();loginMsg('This Google account is not an admin.')}}catch(err){loginMsg('Google login failed: '+(err.message||err.code))}}
+function pwToggle(){const i=$('#adminPassword');i.type=i.type==='password'?'text':'password'}
+function loginMsg(m){const el=$('#loginMsg');el.textContent=m;el.style.display=m?'block':'none'}
+async function emailLogin(e){e.preventDefault();loginMsg('');const email=$('#adminEmail').value.trim().toLowerCase(),pw=$('#adminPassword').value;
+  if(email!==ADMIN_EMAIL)return loginMsg('This account is not an admin. Sign in with the authorized admin email.');
+  try{await auth.setPersistence($('#remember').checked?firebase.auth.Auth.Persistence.LOCAL:firebase.auth.Auth.Persistence.SESSION);await auth.signInWithEmailAndPassword(email,pw)}
+  catch(err){loginMsg(err.code==='auth/wrong-password'||err.code==='auth/invalid-credential'?'Wrong password.':err.code==='auth/user-not-found'?'No account for this email yet.':'Login failed: '+(err.message||err.code))}}
+async function resetPassword(){const email=$('#adminEmail').value.trim();if(!email)return loginMsg('Enter your email first');try{await auth.sendPasswordResetEmail(email);loginMsg('Password reset link sent to '+email)}catch(err){loginMsg('Reset failed: '+(err.message||err.code))}}
+let confirmation=null,recaptcha=null;
+async function sendPhoneOtp(e){e.preventDefault();loginMsg('');const phone=$('#adminPhone').value.replace(/\s/g,'');
+  try{if(!recaptcha){recaptcha=new firebase.auth.RecaptchaVerifier('recaptcha',{size:'invisible'})}
+    confirmation=await auth.signInWithPhoneNumber(phone,recaptcha);$('#otpRow').classList.remove('hidden');$('#verifyBtn').classList.remove('hidden');$('#phoneBtn').textContent='Resend OTP';loginMsg('OTP sent to '+phone)}
+  catch(err){loginMsg('OTP failed: '+(err.message||err.code));try{recaptcha&&recaptcha.clear()}catch(x){};recaptcha=null}}
+async function verifyPhoneOtp(){const code=$('#adminOtp').value.trim();if(!confirmation)return loginMsg('Send OTP first');
+  try{const r=await confirmation.confirm(code);if(!r.user||r.user.email!==ADMIN_EMAIL){await auth.signOut();return loginMsg('This phone is not linked to the admin account. Link it in Admin Profile after email login.')}}
+  catch(err){loginMsg('Wrong or expired OTP')}}
+async function doLogout(){await auth.signOut();toast('Logged out')}
+if(auth)auth.onAuthStateChanged(async u=>{
+  if(!u){show('login');return}
+  if(u.email!==ADMIN_EMAIL){await auth.signOut();show('login');loginMsg('This account is not an admin.');return}
+  show('app');$('#whoName').textContent='Super Admin';$('#whoMail').textContent=u.email;$('#avatar').textContent='A';
+  await loadAll();render();
+});
+
+/* ============ NAV ============ */
+const NAV=[
+ {id:'dashboard',label:'Dashboard',icon:'🏠'},
+ {id:'products',label:'Products',icon:'📦',subs:[['all','All Products'],['add','Add Product']]},
+ {id:'categories',label:'Categories',icon:'🗂️'},
+ {id:'orders',label:'Orders',icon:'🛒',subs:[['all','All Orders']]},
+ {id:'returns',label:'Returns & Refunds',icon:'🔄'},
+ {id:'customers',label:'Customers',icon:'👥'},
+ {id:'payments',label:'Payments & Delivery',icon:'💳',subs:[['payments','Payment Gateway'],['delivery','Delivery Partners']]},
+ {id:'ads',label:'Ads Campaign',icon:'📣'},
+ {id:'women',label:'Women Section',icon:'👗'},
+ {id:'men',label:'Men Section',icon:'👔'},
+ {id:'baby',label:'Baby & Toys',icon:'🧸'},
+ {id:'kitchen',label:'Kitchen & Home',icon:'🍳'},
+ {id:'wholesale',label:'Wholesale & Bulk',icon:'🤝'},
+ {id:'inventory',label:'Inventory',icon:'🏷️'},
+ {id:'coupons',label:'Coupons & Discounts',icon:'🎟️'},
+ {id:'reports',label:'Reports',icon:'📊'},
+ {id:'notifications',label:'Notifications',icon:'🔔'},
+ {id:'support',label:'Support & Complaints',icon:'🎧',subs:[['all','All Tickets'],['new','New Complaints'],['resolved','Resolved Tickets'],['feedback','Feedbacks']]},
+ {id:'profile',label:'Admin Profile',icon:'👤'},
+ {id:'regions',label:'Regions & Currency',icon:'🌍'},
+ {id:'settings',label:'Settings',icon:'⚙️'}
+];
+function go(v,sub){S.view=v;S.sub=sub||'';render();window.scrollTo(0,0);document.getElementById('side').classList.add('hidden')}
+function renderSide(){
+  $('#side').innerHTML=`<div class="px-5 pt-6 pb-4 text-center border-b border-white/10">
+    <img src="assets/brand/zavra-logo.png" alt="ZAVRA" class="w-14 h-14 mx-auto rounded-xl bg-white object-contain">
+    <div class="font-extrabold tracking-widest text-lg mt-2">ZAVRA</div><div class="text-xs text-violet-200">Shop Smart, Live Better</div></div>
+  <nav class="p-3 space-y-1 flex-1">${NAV.map(n=>`
+    <button class="navi ${S.view===n.id?'on':''}" onclick="go('${n.id}')"><span>${n.icon}</span><span class="flex-1">${n.label}</span>${n.subs?'<span class="text-xs opacity-70">▾</span>':''}</button>
+    ${n.subs&&S.view===n.id?`<div class="sub">${n.subs.map(([k,l])=>`<button class="${S.sub===k||(!S.sub&&k==='all')?'on':''}" onclick="go('${n.id}','${k}')">${l}</button>`).join('')}</div>`:''}`).join('')}</nav>
+  <div class="m-4 p-4 rounded-2xl bg-white/10 text-center"><div class="text-2xl">👑</div><div class="font-bold text-sm">ZAVRA Admin Panel</div><div class="text-xs text-violet-200">Version 1.0.0</div></div>`;
+}
+function head(title,sub,actions){return `<div class="flex flex-wrap items-center gap-3"><div class="flex-1 min-w-[220px]"><h1 class="text-2xl md:text-3xl font-extrabold">${title}</h1><p class="text-violet-900/70 mt-1">${sub}</p></div><div class="flex flex-wrap gap-2">${actions||''}</div></div>`}
+function tile(label,value,sub,bg,fg){return `<div class="tile" style="background:${bg}"><div class="ico" style="color:${fg}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l9 5v10l-9 5-9-5V7z"/></svg></div><div><div class="text-sm text-violet-900/70">${label}</div><div class="text-2xl font-extrabold">${value}</div><div class="text-xs font-bold text-emerald-700">${sub}</div></div></div>`}
+function statusPill(s){const m={Delivered:'bg-emerald-50 text-emerald-700',Shipped:'bg-sky-50 text-sky-700',Processing:'bg-violet-50 text-violet-700',Pending:'bg-amber-50 text-amber-700',Cancelled:'bg-rose-50 text-rose-700',Returned:'bg-fuchsia-50 text-fuchsia-700'};return `<span class="pill ${m[s]||'bg-slate-100 text-slate-700'}">${esc(s||'Pending')}</span>`}
+function thumb(src){return src?`<img src="${esc(src)}" class="w-12 h-12 rounded-xl object-cover bg-violet-50" alt="">`:`<div class="w-12 h-12 rounded-xl bg-violet-50 grid place-items-center text-violet-300 text-xs">No photo</div>`}
+function empty(msg){return `<div class="empty">${msg}</div>`}
+
+/* ============ PAGES ============ */
+const PAGES={};
+PAGES.dashboard=()=>{
+  const o=S.data.orders,p=S.data.products,c=S.data.customers,act=S.data.activity||[];
+  const rev=o.filter(x=>x.status==='Delivered').reduce((t,x)=>t+(Number(x.total)||0),0);
+  const top=[...p].sort((a,b)=>(Number(b.sold)||0)-(Number(a.sold)||0)).slice(0,4);
+  const cats={};p.forEach(x=>{const k=x.cat||'Uncategorized';cats[k]=(cats[k]||0)+1});
+  const catList=Object.entries(cats).slice(0,6);
+  const recent=o.slice(0,4);
+  const tcard=(bg,ic,label,value,note,go_)=>`<div onclick="go('${go_}')" class="cursor-pointer hover:shadow-lg rounded-2xl p-5 flex items-center gap-4 min-h-[110px]" style="background:${bg}"><div class="w-14 h-14 rounded-2xl bg-white/60 grid place-items-center text-2xl">${ic}</div><div><div class="text-sm font-semibold text-violet-950/80">${label}</div><div class="text-2xl font-extrabold">${value}</div><div class="text-xs font-bold text-violet-900/50">${note}</div></div></div>`;
+  return `<div class="flex flex-wrap items-center gap-3"><div class="flex-1 min-w-[220px]"><h1 class="text-2xl md:text-3xl font-extrabold">Welcome Back, Super Admin! 👋</h1><p class="text-violet-900/70 mt-1">Here's what's happening with your store today.</p></div><span class="btn2">Last 30 Days ▾</span></div>
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+    ${tcard('linear-gradient(120deg,#8b5cf6,#6200EA)','🛒','Total Orders',o.length?o.length:'',o.length?'Live from store':'No orders yet','orders')}
+    ${tcard('linear-gradient(120deg,#bbf7d0,#86efac)','👥','Total Customers',c.length?c.length:'',c.length?'Live from store':'No customers yet','customers')}
+    ${tcard('linear-gradient(120deg,#fde68a,#fbbf24)','₹','Total Revenue',rev?money(rev):'',rev?'Delivered orders':'No sales yet','orders')}
+    ${tcard('linear-gradient(120deg,#bfdbfe,#60a5fa)','📦','Total Products',p.length?p.length:'',p.length?'Live from store':'No products yet','products')}
+  </div>
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <div class="card p-5 xl:col-span-2"><div class="flex justify-between items-center mb-3"><h3 class="font-extrabold">📊 Sales Overview</h3><span class="pill bg-violet-50 text-violet-700">This Month</span></div>${o.length?'<p class="text-sm text-violet-900/70">Chart fills in as orders arrive.</p>':empty('No sales data yet. The chart fills in when orders arrive.')}</div>
+    <div class="card p-5"><div class="flex justify-between mb-3"><h3 class="font-extrabold">Recent Orders</h3><button class="text-sm font-bold text-brand-600" onclick="go('orders')">View All →</button></div>
+      ${recent.length?recent.map(x=>`<div onclick="openOrder('${x._id}')" class="cursor-pointer flex items-center gap-3 py-2 border-b border-violet-50 last:border-0 hover:bg-violet-50/50 rounded-lg">${thumb(x.img)}<div class="flex-1 min-w-0"><div class="font-bold text-sm">#${esc(x.orderId||x._id)}</div><div class="text-xs text-violet-900/60">${money(x.total)} · ${esc(x.customer||'')}</div></div>${statusPill(x.status)}</div>`).join(''):empty('No orders yet')}</div>
+  </div>
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <div class="card p-5"><div class="flex justify-between mb-3"><h3 class="font-extrabold">▦ Top Categories</h3><button class="text-sm font-bold text-brand-600" onclick="go('categories')">View All →</button></div>${catList.length?`<div class="grid grid-cols-3 gap-3">${catList.map(([k,v])=>{const pr=p.find(x=>(x.cat||'Uncategorized')===k&&x.img);return `<div class="rounded-2xl border border-violet-100 p-2 text-center bg-violet-50/40">${pr?`<img src="${esc(pr.img)}" class="w-full h-20 object-cover rounded-xl" alt="">`:`<div class="w-full h-20 rounded-xl bg-white grid place-items-center text-violet-300 text-xs">No photo</div>`}<div class="font-bold text-xs mt-2 truncate">${esc(k)}</div><div class="text-xs font-bold text-emerald-700">${Math.round(v*100/p.length)}%</div></div>`}).join('')}</div>`:empty('No categories yet')}</div>
+    
+    <div class="card p-5"><h3 class="font-extrabold mb-3">⚡ Recent Activity</h3>${act.length?act.slice(0,5).map(x=>`<div class="py-2 border-b border-violet-50 last:border-0"><div class="text-sm font-bold">${esc(x.text||'')}</div><div class="text-xs text-violet-900/60">${esc(x.at||'')}</div></div>`).join(''):empty('No activity yet')}</div>
+    <div class="card p-5"><div class="flex justify-between mb-3"><h3 class="font-extrabold">🏆 Top Selling Products</h3><button class="text-sm font-bold text-brand-600" onclick="go('products')">View All →</button></div>${top.length?`<div class="grid grid-cols-2 md:grid-cols-4 gap-3">${top.map(x=>{const off=x.old&&Number(x.old)>Number(x.price)?Math.round((1-x.price/x.old)*100):0;return `<div onclick="editProduct('${x._id}')" class="cursor-pointer rounded-2xl border border-violet-100 p-3 hover:shadow-md">${off?`<span class="pill bg-rose-500 text-white float-right">${off}% OFF</span>`:''}<div class="h-36 rounded-xl bg-violet-50 grid place-items-center overflow-hidden mb-2">${x.img?`<img src="${esc(x.img)}" class="h-full w-full object-cover" alt="">`:'<span class="text-violet-300 text-xs">No photo</span>'}</div><div class="font-bold text-sm truncate">${esc(x.name)}</div><div class="font-extrabold">${money(x.price)}</div>${x.old?`<div class="text-xs line-through text-violet-400">${money(x.old)}</div>`:''}</div>`}).join('')}</div>`:empty('No products yet')}</div>
+  </div>`;
+};
+function productRows(list){return list.length?`<div class="scroll-x"><table class="t"><thead><tr><th>#</th><th>Image</th><th>Product</th><th>Category</th><th>Price</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead><tbody>${list.map((x,i)=>`<tr><td>${i+1}</td><td>${thumb(x.img)}</td><td><div class="font-bold">${esc(x.name)}</div><div class="text-xs text-violet-900/60">${esc(x.sku||'')}</div></td><td>${esc(x.cat||'')}</td><td><b>${money(x.price)}</b>${x.old&&Number(x.old)>Number(x.price)?`<div class="text-xs line-through text-violet-400">${money(x.old)}</div>`:''}</td><td class="${Number(x.stock)>0?'text-emerald-700':'text-rose-600'} font-bold">${Number(x.stock)||0}</td><td>${x.status==='Inactive'?'<span class="pill bg-slate-100 text-slate-600">Inactive</span>':'<span class="pill bg-emerald-50 text-emerald-700">Active</span>'}</td><td><div class="flex gap-2"><button class="btn2 px-2 py-1" onclick="editProduct('${x._id}')">Edit</button><button class="btnx" onclick="delProduct('${x._id}')">Delete</button></div></td></tr>`).join('')}</tbody></table></div>`:empty('No products yet. Click "+ Add Product" to create one.')}
+S.f=S.f||{cat:'',status:'',stock:''};
+const pct=(n,t)=>t?Math.round(n*100/t)+'%':'';
+PAGES.products=()=>{
+  if(S.sub==='add'){setTimeout(()=>productForm(),0);S.sub='';}
+  const all=S.data.products;const f=S.f;const q=(S.q||'').toLowerCase();
+  const cats=[...new Set(all.map(x=>x.cat).filter(Boolean))];
+  const list=all.filter(x=>(!q||(x.name+' '+(x.sku||'')+' '+(x.cat||'')).toLowerCase().includes(q))&&(!f.cat||x.cat===f.cat)&&(!f.status||(f.status==='Active'?x.status!=='Inactive':x.status==='Inactive'))&&(!f.stock||(f.stock==='out'?Number(x.stock)===0:f.stock==='low'?Number(x.stock)>0&&Number(x.stock)<=10:Number(x.stock)>10)));
+  const active=all.filter(x=>x.status!=='Inactive').length, inactive=all.length-active;
+  const tc=(bg,ic,label,val,note)=>`<div class="rounded-2xl p-5 flex items-center gap-4" style="background:${bg}"><div class="w-16 h-16 rounded-2xl bg-white/60 grid place-items-center text-3xl">${ic}</div><div><div class="text-sm font-semibold text-violet-950/80">${label}</div><div class="text-2xl font-extrabold">${val}</div><div class="text-xs font-bold text-violet-900/50">${note}</div></div></div>`;
+  const sel=(id,label,opts,val)=>`<select class="inp" style="max-width:200px" onchange="S.f.${id}=this.value;render()"><option value="">${label}</option>${opts.map(([v,t])=>`<option value="${esc(v)}" ${v===val?'selected':''}>${esc(t)}</option>`).join('')}</select>`;
+  const rows=list.map((x,i)=>{const off=x.old&&Number(x.old)>Number(x.price);const on=x.status!=='Inactive';return `<tr class="hover:bg-violet-50/40">
+    <td><input type="checkbox" class="w-4 h-4 accent-violet-700"></td><td>${i+1}</td>
+    <td>${x.img?`<img src="${esc(x.img)}" class="w-16 h-16 rounded-xl object-cover" alt="">`:'<div class="w-16 h-16 rounded-xl bg-violet-50 grid place-items-center text-violet-300 text-xs">No photo</div>'}</td>
+    <td><div class="font-bold cursor-pointer" onclick="openProduct('${x._id}')">${esc(x.name)}</div><div class="text-xs text-violet-900/60">${esc(x.desc||x.sku||'')}</div></td>
+    <td><span class="pill bg-violet-50 text-violet-700">${esc(x.cat||'—')}</span></td>
+    <td><b>${money(x.price)}</b>${off?`<div class="text-xs line-through text-violet-400">${money(x.old)}</div>`:''}</td>
+    <td class="font-bold ${Number(x.stock)>0?'text-emerald-700':'text-rose-600'}">${Number(x.stock)||0}</td>
+    <td><label class="switch"><input type="checkbox" ${on?'checked':''} onchange="toggleProduct('${x._id}',this.checked)"><span class="slider"></span></label> <span class="text-sm font-bold ${on?'text-emerald-700':'text-slate-500'}">${on?'Active':'Inactive'}</span></td>
+    <td><div class="flex gap-2"><button class="btn2 px-2 py-1" title="View" onclick="openProduct('${x._id}')">👁</button><button class="btn px-2 py-1" title="Edit" onclick="editProduct('${x._id}')">✎</button><button class="btnx" title="Delete" onclick="delProduct('${x._id}')">🗑</button></div></td></tr>`}).join('');
+  return `<div class="flex flex-wrap items-center gap-3"><div class="flex items-center gap-3 flex-1 min-w-[220px]"><div class="text-4xl">📦</div><div><h1 class="text-2xl md:text-3xl font-extrabold">Products Management</h1><p class="text-violet-900/70">Manage all products from your store</p></div></div><button class="btn" onclick="productForm()">+ Add Product</button></div>
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+    ${tc('linear-gradient(120deg,#e9d5ff,#d8b4fe)','📦','Total Products',all.length||'','Live from store')}
+    ${tc('linear-gradient(120deg,#bbf7d0,#86efac)','🛒','Active Products',active||'','Visible on website')}
+    ${tc('linear-gradient(120deg,#fde68a,#fdba74)','⏸','Inactive Products',inactive||'','Hidden from website')}
+    ${tc('linear-gradient(120deg,#bfdbfe,#93c5fd)','👁','Total Views','—','Analytics not connected')}
+  </div>
+  <div class="card p-4 flex flex-wrap items-center gap-3">
+    <input class="inp flex-1 min-w-[200px]" placeholder="Search products..." value="${esc(S.q||'')}" oninput="S.q=this.value;render()">
+    ${sel('cat','All Categories',cats.map(c=>[c,c]),f.cat)}
+    ${sel('status','All Status',[['Active','Active'],['Inactive','Inactive']],f.status)}
+    ${sel('stock','All Stock',[['in','In stock'],['low','Low stock'],['out','Out of stock']],f.stock)}
+    <button class="btn" onclick="render()">Search</button>
+    <button class="btn2" onclick="S.q='';S.f={cat:'',status:'',stock:''};render()">Reset</button>
+  </div>
+  <div class="card overflow-hidden">${all.length?`<div class="scroll-x"><table class="t"><thead><tr><th><input type="checkbox" class="w-4 h-4 accent-violet-700"></th><th>#</th><th>Product Image</th><th>Product Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead><tbody>${rows||'<tr><td colspan="9">'+empty('No products match this filter.')+'</td></tr>'}</tbody></table></div><div class="p-4 text-sm text-violet-900/70">Showing ${list.length} of ${all.length} products</div>`:empty('No products yet. Click "+ Add Product" to create one.')}</div>`;
+};
+async function toggleProduct(id,on){try{await db.collection('products').doc(id).update({status:on?'Active':'Inactive'});const x=S.data.products.find(p=>p._id===id);if(x)x.status=on?'Active':'Inactive';render();toast(on?'Product active':'Product inactive')}catch(err){toast('Update failed');render()}}
+function openProduct(id){const x=S.data.products.find(p=>p._id===id);if(!x)return;openModal(`<div class="flex justify-between mb-4"><h2 class="text-xl font-extrabold">${esc(x.name)}</h2><button onclick="closeModal()" class="text-2xl">×</button></div>${x.img?`<img src="${esc(x.img)}" class="w-full max-h-72 object-contain rounded-xl mb-4" alt="">`:''}<div class="grid md:grid-cols-2 gap-2 text-sm"><div><b>SKU:</b> ${esc(x.sku||'—')}</div><div><b>Category:</b> ${esc(x.cat||'—')}</div><div><b>Group:</b> ${esc(x.grp||'—')}</div><div><b>Price:</b> ${money(x.price)}</div><div><b>Old price:</b> ${x.old?money(x.old):'—'}</div><div><b>Stock:</b> ${Number(x.stock)||0}</div><div><b>Status:</b> ${esc(x.status||'Active')}</div></div><p class="mt-4 text-sm">${esc(x.desc||'')}</p><div class="flex justify-end gap-2 mt-4"><button class="btn2" onclick="editProduct('${x._id}')">Edit</button><button class="btnx" onclick="delProduct('${x._id}');closeModal()">Delete</button></div>`)}
+S.cg=S.cg||'all';
+const GRP=[['all','All Categories'],['men','Men'],['women','Women'],['kids','Kids'],['kitchen','Kitchen'],['others','Others']];
+const grpOf=x=>x.grp==='other'||!x.grp?'others':x.grp;
+PAGES.categories=()=>{
+  const p=S.data.products;const stored=S.data.categories;
+  const names={};
+  stored.forEach(c=>{names[c.name]={_id:c._id,name:c.name,grp:c.group||'others',status:c.status||'Active',count:0,img:null}});
+  p.forEach(x=>{const k=x.cat||'Uncategorized';if(!names[k])names[k]={_id:'',name:k,grp:grpOf(x),status:'Active',count:0,img:null};names[k].count++;if(!names[k].img&&x.img)names[k].img=x.img});
+  const all=Object.values(names);
+  const ql=(S.q||'').toLowerCase();const shown=all.filter(c=>(S.cg==='all'||c.grp===S.cg)&&(!ql||c.name.toLowerCase().includes(ql)));
+  const gcount=g=>g==='all'?all.length:all.filter(c=>c.grp===g).length;
+  const active=all.filter(c=>c.status!=='Inactive').length;
+  const tc=(bg,ic,label,val,note)=>`<div class="rounded-2xl p-5 flex items-center gap-4" style="background:${bg}"><div class="w-16 h-16 rounded-2xl bg-white/60 grid place-items-center text-3xl">${ic}</div><div><div class="text-sm font-semibold text-violet-950/80">${label}</div><div class="text-2xl font-extrabold">${val}</div><div class="text-xs font-bold text-violet-900/50">${note}</div></div></div>`;
+  const cards=shown.map(c=>`<div class="card p-5 text-center relative">
+      <button class="absolute right-3 top-3 text-violet-400 text-xl" onclick="openCategory('${esc(c.name)}')" title="Details">⋮</button>
+      <div class="w-full h-36 rounded-xl bg-violet-50 grid place-items-center overflow-hidden mb-3 cursor-pointer" onclick="openCategory('${esc(c.name)}')">${c.img?`<img src="${esc(c.img)}" class="h-full w-full object-cover" alt="">`:'<span class="text-violet-300 text-xs">No photo</span>'}</div>
+      <div class="font-extrabold">${esc(c.name)}</div>
+      <div class="text-sm text-violet-900/60">${c.count} Products</div>
+      <span class="pill ${c.status==='Inactive'?'bg-slate-100 text-slate-600':'bg-emerald-50 text-emerald-700'} mt-2">${c.status==='Inactive'?'Inactive':'● Active'}</span>
+      <div class="flex gap-2 mt-4"><button class="btn2 flex-1" onclick="editCategory('${esc(c.name)}')">✎ Edit</button><button class="btnx flex-1" onclick="delCategory('${esc(c.name)}')">🗑 Delete</button></div></div>`).join('');
+  return `<div class="flex flex-wrap items-center gap-3"><div class="flex items-center gap-3 flex-1 min-w-[220px]"><div class="text-4xl">▦</div><div><h1 class="text-2xl md:text-3xl font-extrabold">Categories Management</h1><p class="text-violet-900/70">Manage your store categories easily</p></div></div><button class="btn" onclick="categoryForm()">+ Add Category</button></div>
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+    ${tc('linear-gradient(120deg,#e9d5ff,#d8b4fe)','▦','Total Categories',all.length||'','Live from store')}
+    ${tc('linear-gradient(120deg,#bbf7d0,#86efac)','▣','Active Categories',active||'','Visible on website')}
+    ${tc('linear-gradient(120deg,#fde68a,#fdba74)','⏻','Inactive Categories',(all.length-active)||'','Hidden from website')}
+    ${tc('linear-gradient(120deg,#bfdbfe,#93c5fd)','★','Total Products',p.length||'','Live from store')}
+  </div>
+  <div class="flex flex-wrap items-center gap-2">${GRP.map(([k,l])=>`<button class="${S.cg===k?'btn':'btn2'}" onclick="S.cg='${k}';render()">${l} (${gcount(k)})</button>`).join('')}<input class="inp flex-1 min-w-[200px] max-w-sm ml-auto" placeholder="Search category..." value="${esc(S.q||'')}" oninput="S.q=this.value;render()"></div>
+  ${all.length?`<div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">${cards||''}</div>`:`<div class="card">${empty('No categories yet. Click "+ Add Category" or add a product with a category.')}</div>`}
+  <div class="card p-4 text-sm text-violet-900/70">ⓘ Categories are created from your products and from "+ Add Category".</div>`;
+};
+function categoryForm(name){const c=name?S.data.categories.find(x=>x.name===name)||{name}:{};openModal(`<div class="flex justify-between mb-4"><h2 class="text-xl font-extrabold">${name?'Edit category':'New category'}</h2><button onclick="closeModal()" class="text-2xl">×</button></div>
+<form class="grid gap-3" onsubmit="saveCategory(event,'${c._id||''}')"><div><label class="lbl">Category name</label><input class="inp" name="name" required value="${esc(c.name||'')}"></div>
+<div><label class="lbl">Group</label><select class="inp" name="group">${['men','women','kids','kitchen','others'].map(g=>`<option value="${g}" ${g===(c.group||'')?'selected':''}>${g}</option>`).join('')}</select></div>
+<div><label class="lbl">Status</label><select class="inp" name="status"><option>Active</option><option ${c.status==='Inactive'?'selected':''}>Inactive</option></select></div>
+<div class="flex justify-end gap-2"><button type="button" class="btn2" onclick="closeModal()">Cancel</button><button class="btn" type="submit">Save</button></div></form>`)}
+async function saveCategory(e,id){e.preventDefault();const f=new FormData(e.target);const d={name:String(f.get('name')).trim(),group:f.get('group'),status:f.get('status')};
+  try{if(id){await db.collection('categories').doc(id).update(d);Object.assign(S.data.categories.find(x=>x._id===id)||{},d)}else{const r=await db.collection('categories').add(d);S.data.categories.push({_id:r.id,...d})}closeModal();render();toast('Category saved')}catch(err){toast('Save failed: '+(err.message||err.code))}}
+function editCategory(name){const c=S.data.categories.find(x=>x.name===name);if(!c)return toast('Products in this category are managed from Products');categoryForm(name)}
+async function delCategory(name){const c=S.data.categories.find(x=>x.name===name);if(!c)return toast('Category comes from products. Change the product category to remove it.');if(!confirm('Delete category "'+name+'"?'))return;try{await db.collection('categories').doc(c._id).delete();S.data.categories=S.data.categories.filter(x=>x._id!==c._id);render();toast('Category deleted')}catch(err){toast('Delete failed')}}
+function openCategory(name){S.q='';S.f={cat:name,status:'',stock:''};S.view='products';render();window.scrollTo(0,0)}
+
+S.rf=S.rf||'all';S.rsel=S.rsel||'';
+const RSTAT={Pending:'bg-amber-50 text-amber-700',Approved:'bg-emerald-50 text-emerald-700',Rejected:'bg-rose-50 text-rose-700',Completed:'bg-violet-50 text-violet-700'};
+PAGES.returns=()=>{
+  const R=S.data.returns;const ql=(S.q||'').toLowerCase();
+  const shown=R.filter(x=>(S.rf==='all'||x.status===S.rf)&&(!ql||[x.id,x.orderId,x.customer].join(' ').toLowerCase().includes(ql)));
+  const sel=R.find(x=>x._id===S.rsel)||shown[0]||null;
+  const cnt=k=>k==='all'?R.length:R.filter(x=>x.status===k).length;
+  const refunded=R.filter(x=>x.status==='Completed').reduce((t,x)=>t+(Number(x.amount)||0),0);
+  const tc=(bg,label,val,note,icon)=>`<div class="rounded-2xl p-5 flex items-center gap-4" style="background:${bg}"><div class="w-16 h-16 rounded-2xl bg-white/60 grid place-items-center text-3xl">${icon}</div><div><div class="text-sm font-semibold text-violet-950/80">${label}</div><div class="text-2xl font-extrabold">${val}</div><div class="text-xs font-bold text-violet-900/50">${note}</div></div></div>`;
+  const chip=(k,l)=>`<button class="${S.rf===k?'btn':'btn2'}" onclick="S.rf='${k}';render()">${l} (${cnt(k)})</button>`;
+  const rows=shown.map(x=>`<tr class="hover:bg-violet-50/40 cursor-pointer ${sel&&sel._id===x._id?'bg-violet-50':''}" onclick="S.rsel='${x._id}';render()"><td><input type="checkbox" class="w-4 h-4 accent-violet-700" onclick="event.stopPropagation()"></td><td class="font-bold">${esc(x.id||x._id)}</td><td>#${esc(x.orderId||'')}</td><td>${esc(x.customer||'')}</td><td>${esc(x.product||'')}</td><td>${esc(x.reason||'')}</td><td><span class="pill ${RSTAT[x.status]||'bg-slate-100 text-slate-700'}">${esc(x.status||'Pending')}</span></td><td class="text-sm">${esc(x.date||'')}</td><td><button class="btnx" onclick="event.stopPropagation();delReturn('${x._id}')">🗑</button></td></tr>`).join('');
+  const detail=sel?`<div class="flex gap-3">${sel.img?`<img src="${esc(sel.img)}" class="w-20 h-24 rounded-xl object-cover" alt="">`:'<div class="w-20 h-24 rounded-xl bg-violet-50"></div>'}<div class="flex-1"><div class="font-extrabold">${esc(sel.product||'')}</div><div class="text-xs text-violet-900/60">Order ID: #${esc(sel.orderId||'')}</div><span class="pill ${RSTAT[sel.status]||''} mt-2">${esc(sel.status||'Pending')}</span></div></div>
+    <div class="mt-4 text-sm space-y-1"><div><b>Return ID:</b> ${esc(sel.id||sel._id)}</div><div><b>Requested On:</b> ${esc(sel.date||'')}</div><div><b>Reason:</b> ${esc(sel.reason||'')}</div><div><b>Customer:</b> ${esc(sel.customer||'')}</div><div><b>Phone:</b> ${esc(sel.phone||'—')}</div></div>
+    <div class="mt-4 p-3 rounded-xl bg-emerald-50"><div class="text-sm font-bold">Refund Amount</div><div class="text-xl font-extrabold">${money(sel.amount)}</div></div>
+    <div class="grid grid-cols-2 gap-2 mt-4"><button class="btn3" onclick="setReturnStatus('${sel._id}','Approved')">✓ Approve Return</button><button class="btnx py-2" onclick="setReturnStatus('${sel._id}','Rejected')">✕ Reject Return</button></div>
+    <button class="btn w-full mt-2" onclick="setReturnStatus('${sel._id}','Completed')">🏦 Process Refund</button>`:empty('Select a return to see its details.');
+  return head('Returns &amp; Refund Management','Manage return requests and process refunds easily','<button class="btn2" onclick="toast(\'Return policy page will be added with the website settings step\')">📘 Return Policy</button><button class="btn2" onclick="go(\'settings\')">⚙ Refund Settings</button><button class="btn" onclick="toast(\'Export will be added with the reports step\')">⬇ Export Report</button>')+`
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+    ${tc('linear-gradient(120deg,#dbeafe,#bfdbfe)','Total Returns',R.length||'',R.length?'Live from store':'No returns yet','📦')}
+    ${tc('linear-gradient(120deg,#bbf7d0,#86efac)','Approved Returns',cnt('Approved')||'','Approved requests','✅')}
+    ${tc('linear-gradient(120deg,#fde68a,#fdba74)','Pending Returns',cnt('Pending')||'','Waiting for action','⏱')}
+    ${tc('linear-gradient(120deg,#ede9fe,#ddd6fe)','Total Refunded',refunded?money(refunded):'','Completed refunds','₹')}
+  </div>
+  <div class="flex flex-wrap items-center gap-2">${chip('all','All Returns')}${chip('Pending','Pending')}${chip('Approved','Approved')}${chip('Rejected','Rejected')}${chip('Completed','Completed')}</div>
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <div class="xl:col-span-2 space-y-3">
+      <div class="card p-4 flex flex-wrap items-center gap-3"><input class="inp flex-1 min-w-[200px]" placeholder="Search by Order ID, Customer Name..." value="${esc(S.q||'')}" oninput="S.q=this.value;render()"><button class="btn" onclick="render()">▼ Filter</button></div>
+      <div class="card overflow-hidden">${R.length?`<div class="scroll-x"><table class="t"><thead><tr><th><input type="checkbox" class="w-4 h-4 accent-violet-700"></th><th>Return ID</th><th>Order ID</th><th>Customer</th><th>Product</th><th>Reason</th><th>Status</th><th>Requested On</th><th>Action</th></tr></thead><tbody>${rows||'<tr><td colspan="9">'+empty('No returns match this filter.')+'</td></tr>'}</tbody></table></div><div class="p-4 text-sm text-violet-900/70">Showing ${shown.length} of ${R.length} returns</div>`:empty('No return requests yet. Customer returns appear here.')}</div>
+    </div>
+    <div class="card p-5"><div class="flex justify-between items-center mb-3"><h3 class="font-extrabold">Return Details</h3></div>${detail}</div>
+  </div>
+  <div class="card p-4 flex flex-wrap items-center justify-between gap-2"><div class="text-sm">ⓘ <b>Need Help?</b> Contact our support team for return &amp; refund assistance.</div><button class="btn2" onclick="go('settings')">🎧 Contact Support</button></div>`;
+};
+async function setReturnStatus(id,st){try{await db.collection('returns').doc(id).update({status:st});const x=S.data.returns.find(r=>r._id===id);if(x)x.status=st;if(st==='Completed'){try{await db.collection('refunds').add({returnId:id,amount:(x&&x.amount)||0,at:new Date().toISOString()})}catch(e){}}logActivity('Return '+((x&&x.id)||id)+' set to '+st);render();toast('Return updated')}catch(err){toast('Update failed: '+(err.message||err.code))}}
+async function delReturn(id){if(!confirm('Delete this return?'))return;try{await db.collection('returns').doc(id).delete();S.data.returns=S.data.returns.filter(r=>r._id!==id);render();toast('Return deleted')}catch(err){toast('Delete failed')}}
+function orderRows(list){return list.length?`<div class="scroll-x"><table class="t"><thead><tr><th>#</th><th>Order ID</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Date</th><th>Update</th></tr></thead><tbody>${list.map((x,i)=>`<tr><td>${i+1}</td><td class="font-bold">#${esc(x.orderId||x._id)}</td><td>${esc(x.customer||'')}</td><td>${Number(x.items?.length||x.qty)||0}</td><td><b>${money(x.total)}</b></td><td>${statusPill(x.status)}</td><td>${esc(x.date||'')}</td><td><select class="inp py-1" onchange="setOrderStatus('${x._id}',this.value)">${['Pending','Processing','Shipped','Delivered','Cancelled','Returned'].map(s=>`<option ${s===x.status?'selected':''}>${s}</option>`).join('')}</select></td></tr>`).join('')}</tbody></table></div>`:empty('No orders yet. Orders from the website appear here.')}
+S.of=S.of||{st:'',sel:''};
+PAGES.orders=()=>{
+  if(S.sub==='returns')return PAGES.returns();
+  const O=S.data.orders;const f=S.of;const ql=(S.q||'').toLowerCase();
+  const ST=['Pending','Processing','Shipped','Delivered','Cancelled'];
+  const list=O.filter(x=>(!f.st||x.status===f.st)&&(!ql||[x.orderId,x._id,x.customer].join(' ').toLowerCase().includes(ql)));
+  const sel=O.find(x=>x._id===f.sel)||list[0]||null;
+  const cnt=k=>k?O.filter(x=>x.status===k).length:O.length;
+  const tc=(bg,label,val,note,icon)=>`<div class="rounded-2xl p-5 flex items-center gap-4" style="background:${bg}"><div class="w-16 h-16 rounded-2xl bg-white/60 grid place-items-center text-3xl">${icon}</div><div><div class="text-sm font-semibold text-violet-950/80">${label}</div><div class="text-2xl font-extrabold">${val}</div><div class="text-xs font-bold text-violet-900/50">${note}</div></div></div>`;
+  const chip=(k,l)=>`<button class="${f.st===k?'btn':'btn2'}" onclick="S.of.st='${k}';render()">${l} (${cnt(k)})</button>`;
+  const sp=v=>{const m={Delivered:'bg-emerald-50 text-emerald-700',Processing:'bg-sky-50 text-sky-700',Shipped:'bg-violet-50 text-violet-700',Pending:'bg-amber-50 text-amber-700',Cancelled:'bg-rose-50 text-rose-700',Returned:'bg-fuchsia-50 text-fuchsia-700'};return `<span class="pill ${m[v]||'bg-slate-100 text-slate-700'}">${esc(v||'Pending')}</span>`};
+  const rows=list.map(x=>`<tr class="hover:bg-violet-50/40 cursor-pointer ${sel&&sel._id===x._id?'bg-violet-50':''}" onclick="S.of.sel='${x._id}';render()"><td><input type="checkbox" class="w-4 h-4 accent-violet-700" onclick="event.stopPropagation()"></td><td class="font-bold">#${esc(x.orderId||x._id)}</td><td>${esc(x.customer||'')}</td><td><b>${money(x.total)}</b></td><td class="text-sm">${esc(x.payment||'—')}</td><td>${sp(x.status)}</td><td class="text-sm">${esc(x.date||'')}</td><td><div class="flex gap-2"><button class="btn2 px-2 py-1" onclick="event.stopPropagation();openOrder('${x._id}')">👁</button><select class="inp py-1 max-w-[130px]" onclick="event.stopPropagation()" onchange="setOrderStatus('${x._id}',this.value)">${[...ST,'Returned'].map(v=>`<option ${v===x.status?'selected':''}>${v}</option>`).join('')}</select></div></td></tr>`).join('');
+  const items=sel&&Array.isArray(sel.items)?sel.items:[];
+  const sub=items.reduce((t,i)=>t+(Number(i.price)||0)*(Number(i.qty)||1),0);
+  const detail=sel?`<div class="flex items-center justify-between"><div class="font-extrabold text-lg">#${esc(sel.orderId||sel._id)}</div>${sp(sel.status)}</div><div class="text-xs text-violet-900/60 mt-1">${esc(sel.date||'')} · ${esc(sel.payment||'')}</div>
+    <div class="grid grid-cols-2 gap-3 mt-4 text-sm"><div><div class="font-bold mb-1">Customer</div>${esc(sel.customer||'')}<div class="text-xs text-violet-900/60">${esc(sel.phone||'')}</div><div class="text-xs text-violet-900/60">${esc(sel.email||'')}</div></div><div><div class="font-bold mb-1">Shipping Address</div>${esc(sel.address||'—')}</div></div>
+    <div class="mt-4 font-bold">Ordered Items (${items.length})</div>${items.length?items.map(i=>`<div class="flex justify-between py-2 border-b border-violet-50 text-sm"><span>${esc(i.name||'')} × ${Number(i.qty)||1}</span><b>${money((Number(i.price)||0)*(Number(i.qty)||1))}</b></div>`).join(''):'<div class="text-sm text-violet-900/60 py-2">No item details</div>'}
+    <div class="mt-3 text-sm space-y-1"><div class="flex justify-between"><span>Subtotal</span><span>${money(sub)}</span></div><div class="flex justify-between"><span>Shipping</span><span>${money(Number(sel.shipping)||0)}</span></div><div class="flex justify-between font-extrabold text-base"><span>Total Amount</span><span>${money(sel.total)}</span></div></div>
+    <div class="mt-4 font-bold">Order Timeline</div><div class="text-sm space-y-1 mt-1"><div>✔ Order Placed <span class="text-violet-900/60">${esc(sel.date||'')}</span></div><div class="${['Shipped','Delivered'].includes(sel.status)?'':'opacity-40'}">✔ Shipped</div><div class="${sel.status==='Delivered'?'':'opacity-40'}">✔ Delivered</div></div>
+    <div class="grid grid-cols-3 gap-2 mt-4"><button class="btn2" onclick="window.print()">🖨 Print Invoice</button><a class="btn2 text-center" href="${sel.phone?'tel:'+esc(sel.phone):'#'}">📞 Contact</a><button class="btnx py-2" onclick="toast('Refunds are handled in Returns & Refunds')">↺ Refund Order</button></div>`:empty('Select an order to see its details.');
+  return head('Order Management','Manage customer orders and track delivery status','<button class="btn" onclick="toast(\'Export will be added with the reports step\')">⬇ Export Orders</button>')+`
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+    ${tc('linear-gradient(120deg,#e9d5ff,#d8b4fe)','Total Orders',O.length||'',O.length?'Live from store':'No orders yet','🛍')}
+    ${tc('linear-gradient(120deg,#bbf7d0,#86efac)','Delivered',cnt('Delivered')||'','Completed orders','✅')}
+    ${tc('linear-gradient(120deg,#fde68a,#fdba74)','Pending',cnt('Pending')||'','Waiting for action','⏱')}
+    ${tc('linear-gradient(120deg,#bfdbfe,#93c5fd)','Cancelled',cnt('Cancelled')||'','Cancelled orders','🔄')}
+  </div>
+  <div class="flex flex-wrap items-center gap-2">${chip('','All Orders')}${ST.map(v=>chip(v,v)).join('')}</div>
+  <div class="card p-4 flex flex-wrap items-center gap-3"><input class="inp flex-1 min-w-[220px]" placeholder="Search by Order ID, Customer Name..." value="${esc(S.q||'')}" oninput="S.q=this.value;render()"><select class="inp" style="max-width:200px" onchange="S.of.st=this.value;render()"><option value="">All Status</option>${ST.map(v=>`<option ${f.st===v?'selected':''}>${v}</option>`).join('')}</select><button class="btn" onclick="render()">Filter</button></div>
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <div class="card overflow-hidden xl:col-span-2">${O.length?`<div class="scroll-x"><table class="t"><thead><tr><th><input type="checkbox" class="w-4 h-4 accent-violet-700"></th><th>Order ID</th><th>Customer</th><th>Amount</th><th>Payment</th><th>Status</th><th>Date</th><th>Action</th></tr></thead><tbody>${rows||'<tr><td colspan="8">'+empty('No orders match this filter.')+'</td></tr>'}</tbody></table></div><div class="p-4 text-sm text-violet-900/70">Showing ${list.length} of ${O.length} orders</div>`:empty('No orders yet. Orders from the website appear here.')}</div>
+    <div class="card p-5"><div class="flex justify-between items-center mb-3"><h3 class="font-extrabold">Order Details</h3></div>${detail}</div>
+  </div>`;
+};
+PAGES.customers=()=>{
+  const c=S.data.customers,o=S.data.orders;const ql=(S.q||'').toLowerCase();const f=S.cf||(S.cf={seg:'',status:'',region:''});
+  const ordersOf=x=>o.filter(q=>(q.customer&&q.customer===x.name)||(q.phone&&q.phone===x.phone)).length;
+  const list=c.filter(x=>(!ql||[x.name,x.email,x.phone].join(' ').toLowerCase().includes(ql))&&(!f.status||(f.status==='Active'?!x.blocked:!!x.blocked))&&(!f.region||x.city===f.region));
+  const regions=[...new Set(c.map(x=>x.city).filter(Boolean))];
+  const act=S.data.activity.slice().sort((x,y)=>String(y.at).localeCompare(String(x.at))).slice(0,4);
+  const tc=(bg,label,val,note,icon)=>`<div class="rounded-2xl p-5 flex items-center gap-4" style="background:${bg}"><div class="w-16 h-16 rounded-2xl bg-white/60 grid place-items-center text-3xl">${icon}</div><div><div class="text-sm font-semibold text-violet-950/80">${label}</div><div class="text-2xl font-extrabold">${val}</div><div class="text-xs font-bold text-violet-900/50">${note}</div></div></div>`;
+  const ini=n=>String(n||'?').trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+  const rows=list.map((x,i)=>`<tr class="hover:bg-violet-50/40"><td><input type="checkbox" class="w-4 h-4 accent-violet-700"></td><td>${i+1}</td><td><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-violet-100 text-violet-700 font-extrabold grid place-items-center">${esc(ini(x.name))}</div><div class="font-bold">${esc(x.name||'')}</div></div></td><td class="text-sm">${esc(x.email||'')}</td><td>${esc(x.phone||'')}</td><td>${esc(x.city||'—')}</td><td><label class="switch"><input type="checkbox" ${x.blocked?'':'checked'} onchange="toggleBlock('${x._id}',!this.checked)"><span class="slider"></span></label> <span class="text-sm font-bold ${x.blocked?'text-rose-600':'text-emerald-700'}">${x.blocked?'Blocked':'Active'}</span></td><td>${ordersOf(x)}</td><td class="text-sm">${esc(x.joined||'')}</td><td><div class="flex gap-2"><button class="btn2 px-2 py-1" onclick="openCustomer('${x._id}')">👁</button><button class="btn px-2 py-1" onclick="customerForm('${x._id}')">✎</button><button class="btnx" onclick="delCustomer('${x._id}')">🗑</button></div></td></tr>`).join('');
+  return head('Customers &amp; Users Management','Manage your customers, users and their activities','<button class="btn2" onclick="toast(\'Import users will be added with the upload step\')">⬆ Import Users</button><button class="btn" onclick="customerForm()">+ Add Customer</button>')+`
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+    ${tc('linear-gradient(120deg,#e9d5ff,#d8b4fe)','Total Customers',c.length||'',c.length?'Live from store':'No customers yet','👥')}
+    ${tc('linear-gradient(120deg,#bbf7d0,#86efac)','Active Users',c.filter(x=>!x.blocked).length||'','Not blocked','🛒')}
+    ${tc('linear-gradient(120deg,#fed7aa,#fdba74)','New Signups',c.filter(x=>x.joined&&String(x.joined).slice(0,7)===new Date().toISOString().slice(0,7)).length||'','This month','👤')}
+    ${tc('linear-gradient(120deg,#bfdbfe,#93c5fd)','Blocked Users',c.filter(x=>x.blocked).length||'','Blocked accounts','⛔')}
+  </div>
+  <div class="card p-4 flex flex-wrap items-center gap-3">
+    <input class="inp flex-1 min-w-[220px]" placeholder="Search by name, email or phone..." value="${esc(S.q||'')}" oninput="S.q=this.value;render()">
+    <select class="inp" style="max-width:180px" onchange="S.cf.status=this.value;render()"><option value="">All Status</option><option ${f.status==='Active'?'selected':''}>Active</option><option ${f.status==='Blocked'?'selected':''}>Blocked</option></select>
+    <select class="inp" style="max-width:200px" onchange="S.cf.region=this.value;render()"><option value="">All Regions</option>${regions.map(r=>`<option ${f.region===r?'selected':''}>${esc(r)}</option>`).join('')}</select>
+    <button class="btn" onclick="render()">Filter</button><button class="btn2" onclick="exportCustomers()">⬇ Export</button>
+  </div>
+  <div class="grid grid-cols-1 xl:grid-cols-4 gap-4">
+    <div class="card overflow-hidden xl:col-span-3">${c.length?`<div class="scroll-x"><table class="t"><thead><tr><th><input type="checkbox" class="w-4 h-4 accent-violet-700"></th><th>#</th><th>Customer Name</th><th>Email</th><th>Phone</th><th>Location</th><th>Status</th><th>Total Orders</th><th>Joined On</th><th>Actions</th></tr></thead><tbody>${rows||'<tr><td colspan="10">'+empty('No customers match this filter.')+'</td></tr>'}</tbody></table></div><div class="p-4 text-sm text-violet-900/70">Showing ${list.length} of ${c.length} customers</div>`:empty('No customers yet. Customers appear here after they register on the website.')}</div>
+    <div class="space-y-4">
+      <div class="card p-5"><div class="font-extrabold mb-3">Quick Actions</div><div class="grid gap-2"><button class="btn2 text-left" onclick="customerForm()">👤 Add Customer</button><button class="btn2 text-left" onclick="toast('Newsletter needs an email service. Not connected yet.')">✉ Send Newsletter</button><button class="btn2 text-left" onclick="exportCustomers()">⬇ Export Customers</button><button class="btn2 text-left" onclick="toast('Segments will be added with the marketing step')">🧩 Manage Segments</button></div></div>
+      <div class="card p-5"><div class="font-extrabold mb-3">Recent Activity</div>${act.length?act.map(x=>`<div class="py-2 border-b border-violet-50 last:border-0"><div class="text-sm font-bold">${esc(x.text||'')}</div><div class="text-xs text-violet-900/60">${esc(x.at||'')}</div></div>`).join(''):'<div class="text-sm text-violet-900/60">No activity yet</div>'}</div>
+    </div>
+  </div>`;
+};
+async function toggleBlock(id,blocked){try{await db.collection('customers').doc(id).update({blocked});const x=S.data.customers.find(c=>c._id===id);if(x)x.blocked=blocked;render();toast(blocked?'Customer blocked':'Customer unblocked')}catch(err){toast('Update failed');render()}}
+function customerForm(id){const x=(id&&S.data.customers.find(c=>c._id===id))||{};openModal(`<div class="flex justify-between mb-4"><h2 class="text-xl font-extrabold">${id?'Edit customer':'New customer'}</h2><button onclick="closeModal()" class="text-2xl">×</button></div><form class="grid md:grid-cols-2 gap-3" onsubmit="saveCustomer(event,'${id||''}')"><div><label class="lbl">Name</label><input class="inp" name="name" required value="${esc(x.name||'')}"></div><div><label class="lbl">Email</label><input class="inp" name="email" type="email" value="${esc(x.email||'')}"></div><div><label class="lbl">Phone</label><input class="inp" name="phone" value="${esc(x.phone||'')}"></div><div><label class="lbl">City</label><input class="inp" name="city" value="${esc(x.city||'')}"></div><div class="md:col-span-2 flex justify-end gap-2"><button type="button" class="btn2" onclick="closeModal()">Cancel</button><button class="btn" type="submit">Save</button></div></form>`)}
+async function saveCustomer(e,id){e.preventDefault();const f=new FormData(e.target);const d={name:f.get('name'),email:f.get('email')||'',phone:f.get('phone')||'',city:f.get('city')||'',blocked:!!(id&&S.data.customers.find(c=>c._id===id)?.blocked),joined:new Date().toISOString().slice(0,10)};
+  try{if(id){await db.collection('customers').doc(id).update(d);Object.assign(S.data.customers.find(c=>c._id===id)||{},d)}else{const r=await db.collection('customers').add(d);S.data.customers.unshift({_id:r.id,...d})}closeModal();render();toast('Customer saved')}catch(err){toast('Save failed: '+(err.message||err.code))}}
+async function delCustomer(id){if(!confirm('Delete this customer?'))return;try{await db.collection('customers').doc(id).delete();S.data.customers=S.data.customers.filter(c=>c._id!==id);render();toast('Customer deleted')}catch(err){toast('Delete failed')}}
+function openCustomer(id){const x=S.data.customers.find(c=>c._id===id);if(!x)return;const os=S.data.orders.filter(q=>(q.customer&&q.customer===x.name)||(q.phone&&q.phone===x.phone));openModal(`<div class="flex justify-between mb-4"><h2 class="text-xl font-extrabold">${esc(x.name||'')}</h2><button onclick="closeModal()" class="text-2xl">×</button></div><div class="grid md:grid-cols-2 gap-2 text-sm"><div><b>Email:</b> ${esc(x.email||'—')}</div><div><b>Phone:</b> ${esc(x.phone||'—')}</div><div><b>City:</b> ${esc(x.city||'—')}</div><div><b>Status:</b> ${x.blocked?'Blocked':'Active'}</div></div><div class="mt-4 font-bold">Orders (${os.length})</div>${os.length?os.map(q=>`<div class="py-2 border-b border-violet-50 text-sm">#${esc(q.orderId||q._id)} · ${money(q.total)} · ${esc(q.status||'')}</div>`).join(''):'<div class="text-sm text-violet-900/60 py-2">No orders yet</div>'}`)}
+function exportCustomers(){const c=S.data.customers;if(!c.length)return toast('No customers to export');const head=['Name','Email','Phone','City','Status'];const lines=[head.join(','),...c.map(x=>[x.name,x.email,x.phone,x.city,x.blocked?'Blocked':'Active'].map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(','))];const blob=new Blob([lines.join('\n')],{type:'text/csv'});const url=URL.createObjectURL(blob);const at=document.createElement('a');at.href=url;at.download='customers.csv';document.body.appendChild(at);at.click();at.remove();URL.revokeObjectURL(url)}
+const PAY_PROVIDERS=[['Razorpay','Razorpay','#0c2451'],['Stripe','stripe','#635bff'],['PayPal','PayPal','#003087'],['Cash on Delivery','Cash on Delivery','#ea580c'],['UPI (Google Pay, PhonePe)','UPI','#0f766e'],['Internet Banking','Net Banking','#4338ca']];
+const DEL_PROVIDERS=[['Delhivery','DELHIVERY','#cc0000'],['Blue Dart','BLUE DART','#0055a4'],['Ekart','ekart','#2563eb'],['Shadowfax','shadowfax','#dc2626'],['Ecom Express','Ecom Express','#e11d48']];
+const SITE_TOGGLES=[['codOn','Cash on Delivery'],['upiOn','UPI Payments'],['walletOn','Digital Wallets'],['bankOn','Online Banking'],['returnsOn','Easy Returns']];
+function partnerRow(kind,i,[name,label,color]){const key=kind==='payments'?'gateways':'delivery';const x=S.data[key].find(p=>p.name===name)||{};const on=!!x.on;
+  const st=on&&x.key?'<span class="pill bg-emerald-50 text-emerald-700">Enabled</span>':on?'<span class="pill bg-amber-50 text-amber-700">Enabled · key missing</span>':'<span class="pill bg-slate-100 text-slate-600">Not connected</span>';
+  return `<tr class="hover:bg-violet-50/40"><td>${i+1}</td><td class="font-bold">${esc(name)}</td><td><span class="font-extrabold" style="color:${color}">${esc(label)}</span></td><td>${esc(kind==='payments'?(x.fee||'—'):(x.charge||'—'))}</td><td>${st}</td><td class="text-sm">${esc(x.updated||'—')}</td><td><div class="flex items-center gap-2"><label class="switch"><input type="checkbox" ${on?'checked':''} onchange="toggleProvider('${key}','${esc(name)}',this.checked)"><span class="slider"></span></label><button class="btn2 px-2 py-1" onclick="configProvider('${key}','${esc(name)}')">✎</button></div></td></tr>`}
+function listStore(kind){
+  const site=S.data.site||{};
+  const pay=PAY_PROVIDERS.length, del=DEL_PROVIDERS.length;
+  const connP=S.data.gateways.filter(x=>x.on&&x.key).length, connD=S.data.delivery.filter(x=>x.on&&x.key).length;
+  const tc=(bg,label,val,note,icon)=>`<div class="rounded-2xl p-5 flex items-center gap-4" style="background:${bg}"><div class="w-16 h-16 rounded-2xl bg-white/60 grid place-items-center text-3xl">${icon}</div><div><div class="text-sm font-semibold text-violet-950/80">${label}</div><div class="text-2xl font-extrabold">${val}</div><div class="text-xs font-bold text-violet-900/50">${note}</div></div></div>`;
+  const tog=(k,l)=>`<div class="flex items-center justify-between py-2"><span class="font-semibold text-sm">${l}</span><label class="switch"><input type="checkbox" ${site[k]?'checked':''} onchange="saveSiteFlag('${k}',this.checked)"><span class="slider"></span></label></div>`;
+  return head('Payment &amp; Delivery Partners Settings','Manage payment methods and delivery partners for your store','<button class="btn2" onclick="toast(\'Analytics will appear after orders arrive\')">📊 Analytics</button><button class="btn" onclick="configProvider(\'gateways\',\'\')">+ Add Partner</button>')+`
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+    ${tc('linear-gradient(120deg,#dbeafe,#bfdbfe)','Total Payments','','Live from orders','💳')}
+    ${tc('linear-gradient(120deg,#bbf7d0,#86efac)','Successful Payments','','Live from orders','✅')}
+    ${tc('linear-gradient(120deg,#ede9fe,#ddd6fe)','Total Deliveries','','Live from orders','🚚')}
+    ${tc('linear-gradient(120deg,#fed7aa,#fdba74)','Avg Delivery Time','','Live from orders','⏱')}
+  </div>
+  <div class="grid grid-cols-1 xl:grid-cols-4 gap-4">
+    <div class="xl:col-span-3 space-y-4">
+      <div class="card overflow-hidden"><div class="flex flex-wrap items-center justify-between gap-2 px-5 py-4 text-white" style="background:linear-gradient(90deg,#7c3aed,#6200EA)"><div class="font-extrabold">💳 Payment Partners</div><span class="pill bg-white/20 text-white">Connected: ${connP} / ${pay}</span></div>
+        <div class="scroll-x"><table class="t"><thead><tr><th>#</th><th>Partner Name</th><th>Logo</th><th>Transaction Fee</th><th>Status</th><th>Last Updated</th><th>Actions</th></tr></thead><tbody>${PAY_PROVIDERS.map((x,i)=>partnerRow('payments',i,x)).join('')}</tbody></table></div></div>
+      <div class="card overflow-hidden"><div class="flex flex-wrap items-center justify-between gap-2 px-5 py-4 text-white" style="background:linear-gradient(90deg,#7c3aed,#6200EA)"><div class="font-extrabold">🚚 Delivery Partners</div><span class="pill bg-white/20 text-white">Connected: ${connD} / ${del}</span></div>
+        <div class="scroll-x"><table class="t"><thead><tr><th>#</th><th>Partner Name</th><th>Logo</th><th>Delivery Charge</th><th>Status</th><th>Last Updated</th><th>Actions</th></tr></thead><tbody>${DEL_PROVIDERS.map((x,i)=>partnerRow('delivery',i,x)).join('')}</tbody></table></div></div>
+      <p class="text-xs text-violet-900/60">Nothing is live until the backend is connected. Switches and keys save to Firestore; payments and deliveries are not processed yet.</p>
+    </div>
+    <div class="space-y-4">
+      <div class="card p-5"><div class="font-extrabold mb-2">⚙ Quick Settings</div>${SITE_TOGGLES.map(([k,l])=>tog(k,l)).join('')}
+        <div class="flex items-center justify-between gap-2 py-2"><span class="font-semibold text-sm">Free Delivery Above (₹)</span><input class="inp max-w-[110px]" type="number" min="0" placeholder="Not set" value="${esc(site.freeDeliveryAbove??'')}" onchange="saveSiteFlag('freeDeliveryAbove',Number(this.value)||0)"></div></div>
+      <div class="card p-5"><div class="font-extrabold mb-2">📍 Delivery Coverage</div><p class="text-sm text-violet-900/70">Coverage areas come from each delivery partner's settings. Not set yet.</p></div>
+      <div class="card p-5"><div class="font-extrabold mb-2">🎧 Need Help?</div><p class="text-sm text-violet-900/70">Our support team is always here to help.</p><button class="btn2 mt-3 w-full" onclick="go('settings')">Contact Support →</button></div>
+    </div>
+  </div>`;
+}
+async function saveSiteFlag(k,v){try{await db.collection('store').doc('site').set({[k]:v},{merge:true});S.data.site={...(S.data.site||{}),[k]:v};toast('Saved')}catch(err){toast('Save failed')}}
+PAGES.payments=()=>listStore('payments');
+PAGES.delivery=()=>listStore('delivery');
+S.adTab=S.adTab||'facebook';
+const PLAT={facebook:['Facebook','#1877f2','f'],instagram:['Instagram','#e1306c','◎'],youtube:['YouTube','#ff0000','▶'],banner:['Banner','#6200EA','▭']};
+PAGES.ads=()=>{
+  const A=S.data.ads;const B=S.data.banners;
+  const cnt=k=>A.filter(x=>x.platform===k).length;
+  const spend=A.reduce((t,x)=>t+(Number(x.spent)||0),0);
+  const notConn='Not connected';
+  const tc=(bg,label,val,note,icon)=>`<div class="rounded-2xl p-5 flex items-center gap-4" style="background:${bg}"><div class="w-16 h-16 rounded-2xl bg-white/60 grid place-items-center text-3xl">${icon}</div><div class="flex-1"><div class="text-sm font-semibold text-violet-950/80">${label}</div><div class="text-2xl font-extrabold">${val}</div><div class="text-xs font-bold text-violet-900/50">${note}</div></div></div>`;
+  const tab=(k)=>`<button class="${S.adTab===k?'btn':'btn2'}" onclick="S.adTab='${k}';render()" style="${S.adTab===k?'':''}">${PLAT[k][0]}</button>`;
+  const panelBody=S.adTab==='banner'?`<p class="text-sm text-violet-900/70 mb-3">Upload a banner of any size, then use it in a campaign.</p><div class="flex gap-2 flex-wrap"><input id="banFile" type="file" accept="image/*" class="inp"><button class="btn" onclick="blAdd()">Upload banner</button></div><div class="grid grid-cols-2 gap-2 mt-4">${B.slice(0,4).map(x=>`<img src="${esc(x.src)}" class="rounded-lg w-full" alt="">`).join('')||'<div class="text-sm text-violet-900/60 col-span-2">No banners yet</div>'}</div>`:
+    `<div class="text-center py-4"><div class="w-20 h-20 mx-auto rounded-full grid place-items-center text-white text-3xl font-extrabold" style="background:${PLAT[S.adTab][1]}">${PLAT[S.adTab][2]}</div><div class="font-extrabold mt-3">Run ${PLAT[S.adTab][0]} Ads</div><div class="text-sm text-violet-900/70 mt-1">Grow your business with targeted ads.</div><div class="text-xs text-rose-600 font-bold mt-2">${notConn}: campaigns are saved as drafts until the ad account is connected.</div><button class="btn w-full mt-4" onclick="campaignForm('${S.adTab}')">Create ${PLAT[S.adTab][0]} Campaign →</button></div>`;
+  const rows=A.map((x,i)=>`<tr class="hover:bg-violet-50/40"><td>${i+1}</td><td class="font-bold">${esc(x.name||'')}</td><td>${esc(PLAT[x.platform]?PLAT[x.platform][0]:(x.platform||''))}</td><td><span class="pill bg-slate-100 text-slate-700">${esc(x.status||'Draft')}</span></td><td>${money(x.budget)}</td><td>${money(x.spent)}</td><td>${esc(x.start||'')}</td><td><div class="flex gap-2"><button class="btn2 px-2 py-1" onclick="campaignForm(null,'${x._id}')">✎</button><button class="btnx" onclick="delCampaign('${x._id}')">🗑</button></div></td></tr>`).join('');
+  return `<div class="flex flex-wrap items-center gap-3"><div class="flex items-center gap-3 flex-1 min-w-[220px]"><div class="text-4xl">📣</div><div><h1 class="text-2xl md:text-3xl font-extrabold">Ads Campaign Manager</h1><p class="text-violet-900/70">Create and manage your advertising campaigns</p></div></div><button class="btn" onclick="campaignForm()">+ Create Campaign</button></div>
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+    ${tc('linear-gradient(120deg,#dbeafe,#bfdbfe)','Facebook Ads',cnt('facebook')||'',notConn,'f')}
+    ${tc('linear-gradient(120deg,#fce7f3,#fbcfe8)','Instagram Ads',cnt('instagram')||'',notConn,'◎')}
+    ${tc('linear-gradient(120deg,#fee2e2,#fecaca)','YouTube Ads',cnt('youtube')||'',notConn,'▶')}
+    ${tc('linear-gradient(120deg,#ede9fe,#ddd6fe)','Total Spend',spend?money(spend):'','Live from campaigns','₹')}
+  </div>
+  <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+    <div class="card p-5"><div class="flex justify-between items-center mb-3"><h3 class="font-extrabold">📊 Campaign Performance</h3><span class="pill bg-violet-50 text-violet-700">Last 30 days</span></div>${A.length?'<p class="text-sm text-violet-900/70">Performance fills in when campaigns run.</p>':empty('No campaign data yet. Reach, clicks and conversions appear after a campaign runs.')}</div>
+    <div class="card p-5"><div class="flex justify-between items-center mb-3"><h3 class="font-extrabold">🏆 Top Performing Campaign</h3></div>${A.length?`<div class="text-sm text-violet-900/70">${esc(A[0].name||'')}</div>`:empty('No campaigns yet')}</div>
+  </div>
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <div class="card p-5 xl:col-span-2"><div class="flex flex-wrap justify-between items-center gap-2 mb-3"><h3 class="font-extrabold">📣 All Campaigns</h3><input class="inp max-w-xs" placeholder="Search campaigns..." value="${esc(S.q||'')}" oninput="S.q=this.value;render()"></div>
+      ${A.length?`<div class="scroll-x"><table class="t"><thead><tr><th>#</th><th>Campaign Name</th><th>Platform</th><th>Status</th><th>Budget</th><th>Spent</th><th>Start Date</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table></div>`:empty('No campaigns yet. Click "+ Create Campaign" to add one.')}</div>
+    <div class="card p-5"><h3 class="font-extrabold mb-3">Create New Campaign</h3><div class="flex flex-wrap gap-2 mb-4">${Object.keys(PLAT).map(tab).join('')}</div>${panelBody}</div>
+  </div>`;
+};
+function campaignForm(platform,id){const x=(id&&S.data.ads.find(a=>a._id===id))||{platform:platform||'facebook'};openModal(`<div class="flex justify-between mb-4"><h2 class="text-xl font-extrabold">${id?'Edit campaign':'New campaign'}</h2><button onclick="closeModal()" class="text-2xl">×</button></div>
+<form class="grid md:grid-cols-2 gap-3" onsubmit="saveCampaign(event,'${id||''}')">
+<div class="md:col-span-2"><label class="lbl">Campaign name</label><input class="inp" name="name" required value="${esc(x.name||'')}"></div>
+<div><label class="lbl">Platform</label><select class="inp" name="platform">${Object.keys(PLAT).map(k=>`<option value="${k}" ${k===x.platform?'selected':''}>${PLAT[k][0]}</option>`).join('')}</select></div>
+<div><label class="lbl">Status</label><select class="inp" name="status">${['Draft','Running','Paused','Completed'].map(v=>`<option ${v===(x.status||'Draft')?'selected':''}>${v}</option>`).join('')}</select></div>
+<div><label class="lbl">Budget (₹)</label><input class="inp" name="budget" type="number" min="0" value="${esc(x.budget??'')}"></div>
+<div><label class="lbl">Start date</label><input class="inp" name="start" type="date" value="${esc(x.start||'')}"></div>
+<div class="md:col-span-2"><label class="lbl">Banner (optional)</label><select class="inp" name="banner"><option value="">No banner</option>${S.data.banners.map(b=>`<option value="${b._id}" ${b._id===x.banner?'selected':''}>${esc(b.name||b._id)} (${b.w}×${b.h})</option>`).join('')}</select></div>
+<div class="md:col-span-2 text-xs text-rose-600 font-bold">Not connected: campaigns are saved as drafts only. Connect the ad account before running.</div>
+<div class="md:col-span-2 flex justify-end gap-2"><button type="button" class="btn2" onclick="closeModal()">Cancel</button><button class="btn" type="submit">Save campaign</button></div></form>`)}
+async function saveCampaign(e,id){e.preventDefault();const f=new FormData(e.target);const d={name:f.get('name'),platform:f.get('platform'),status:f.get('status'),budget:Number(f.get('budget'))||0,start:f.get('start')||'',banner:f.get('banner')||''};
+  try{if(id){await db.collection('ads').doc(id).update(d);Object.assign(S.data.ads.find(a=>a._id===id)||{},d)}else{const r=await db.collection('ads').add({...d,spent:0});S.data.ads.unshift({_id:r.id,...d,spent:0})}closeModal();render();toast('Campaign saved')}catch(err){toast('Save failed: '+(err.message||err.code))}}
+async function delCampaign(id){if(!confirm('Delete this campaign?'))return;try{await db.collection('ads').doc(id).delete();S.data.ads=S.data.ads.filter(a=>a._id!==id);render();toast('Campaign deleted')}catch(err){toast('Delete failed')}}
+S.gf=S.gf||{};
+const GRP_ICON={women:'👗',men:'👔',kids:'🧸',kitchen:'🍳'};
+function fashion(grp,title,sub){
+  const SIDE=grp==='kids'||grp==='kitchen';
+  const all=S.data.products.filter(x=>x.grp===grp);
+  const f=S.gf[grp]||(S.gf[grp]={cat:'',status:'',stock:''});
+  const q=(S.q||'').toLowerCase();
+  const list=all.filter(x=>(!q||(x.name+' '+(x.sku||'')+' '+(x.cat||'')).toLowerCase().includes(q))&&(!f.cat||x.cat===f.cat)&&(!f.status||(f.status==='Active'?x.status!=='Inactive':x.status==='Inactive'))&&(!f.stock||(f.stock==='out'?Number(x.stock)===0:f.stock==='low'?Number(x.stock)>0&&Number(x.stock)<=10:Number(x.stock)>10)));
+  const cats=[...new Set(all.map(x=>x.cat).filter(Boolean))];
+  const orders=S.data.orders.filter(o=>(o.items||[]).some(i=>all.some(p=>p._id===i.id||p.name===i.name)));
+  const rev=orders.filter(o=>o.status==='Delivered').reduce((t,o)=>t+(Number(o.total)||0),0);
+  const active=all.filter(x=>x.status!=='Inactive').length;
+  const tc=(bg,label,val,note,icon)=>`<div class="rounded-2xl p-5 flex items-center gap-4" style="background:${bg}"><div class="w-16 h-16 rounded-2xl bg-white/60 grid place-items-center text-3xl">${icon}</div><div><div class="text-sm font-semibold text-violet-950/80">${label}</div><div class="text-2xl font-extrabold">${val}</div><div class="text-xs font-bold text-violet-900/50">${note}</div></div></div>`;
+  const sel=(k,label,opts)=>`<select class="inp" style="max-width:220px" onchange="S.gf['${grp}'].${k}=this.value;render()"><option value="">${label}</option>${opts.map(([v,t])=>`<option value="${esc(v)}" ${f[k]===v?'selected':''}>${esc(t)}</option>`).join('')}</select>`;
+  const rows=list.map((x,i)=>{const off=x.old&&Number(x.old)>Number(x.price);const on=x.status!=='Inactive';return `<tr class="hover:bg-violet-50/40">
+    <td><input type="checkbox" class="w-4 h-4 accent-violet-700"></td><td>${i+1}</td>
+    <td>${x.img?`<img src="${esc(x.img)}" class="w-16 h-16 rounded-xl object-cover" alt="">`:'<div class="w-16 h-16 rounded-xl bg-violet-50 grid place-items-center text-violet-300 text-xs">No photo</div>'}</td>
+    <td><div class="font-bold cursor-pointer" onclick="openProduct('${x._id}')">${esc(x.name)}</div><div class="text-xs text-violet-900/60">${esc(x.desc||x.sku||'')}</div></td>
+    <td><span class="pill bg-violet-50 text-violet-700">${esc(x.cat||'—')}</span></td>
+    <td><b>${money(x.price)}</b>${off?`<div class="text-xs line-through text-violet-400">${money(x.old)}</div>`:''}</td>
+    <td class="font-bold ${Number(x.stock)>0?'text-emerald-700':'text-rose-600'}">${Number(x.stock)||0}</td>
+    <td><label class="switch"><input type="checkbox" ${on?'checked':''} onchange="toggleProduct('${x._id}',this.checked)"><span class="slider"></span></label> <span class="text-sm font-bold ${on?'text-emerald-700':'text-slate-500'}">${on?'Active':'Inactive'}</span></td>
+    <td><div class="flex gap-2"><button class="btn2 px-2 py-1" title="View" onclick="openProduct('${x._id}')">👁</button><button class="btn px-2 py-1" title="Edit" onclick="editProduct('${x._id}')">✎</button><button class="btnx" title="Delete" onclick="delProduct('${x._id}')">🗑</button></div></td></tr>`}).join('');
+  return `<div class="flex flex-wrap items-center gap-3"><div class="flex items-center gap-3 flex-1 min-w-[220px]"><div class="text-4xl">${GRP_ICON[grp]||'🛍️'}</div><div><h1 class="text-2xl md:text-3xl font-extrabold">${title}</h1><p class="text-violet-900/70">${sub}</p></div></div><button class="btn" onclick="productForm('${grp}')">+ Add Product</button>${(grp==='men'||SIDE)?'<button class="btn2" onclick="toast(\'Product import will be added with the upload step\')">▦ Import Products</button>':'<button class="btn2" onclick="toast(\'CSV import will be added with the product upload step\')">⬆ Import CSV</button>'}</div>
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+    ${tc('linear-gradient(120deg,#e9d5ff,#d8b4fe)','Total Products',all.length||'',all.length?'Live from store':'No products yet','📦')}
+    ${tc('linear-gradient(120deg,#bbf7d0,#86efac)','Total Orders',orders.length||'',orders.length?'Live from store':'No orders yet','🛒')}
+    ${tc('linear-gradient(120deg,#fde68a,#fbbf24)','Total Revenue',rev?money(rev):'','Delivered orders','₹')}
+    ${tc('linear-gradient(120deg,#bfdbfe,#93c5fd)','Active Products',active||'','Live on website','👥')}
+  </div>
+  ${(grp==='men'||SIDE)?`<div class="flex flex-wrap items-center gap-2"><button class="${!f.cat?'btn':'btn2'}" onclick="S.gf['${grp}'].cat='';render()">All Categories (${all.length})</button>${cats.map(c=>`<button class="${f.cat===c?'btn':'btn2'}" onclick="S.gf['${grp}'].cat='${esc(c)}';render()">${esc(c)} (${all.filter(x=>x.cat===c).length})</button>`).join('')}</div>
+  <div class="card p-4 flex flex-wrap items-center gap-3"><input class="inp flex-1 min-w-[200px]" placeholder="Search products..." value="${esc(S.q||'')}" oninput="S.q=this.value;render()"><button class="btn2" onclick="render()">▼ Filter</button><select class="inp" style="max-width:200px"><option>Bulk Actions</option><option>Set Active</option><option>Set Inactive</option></select></div>`:''}
+  ${(grp==='men'||SIDE)?'':`<div class="card p-4 flex flex-wrap items-center gap-3">
+    <input class="inp flex-1 min-w-[200px]" placeholder="Search ${esc(title.split
+(' ')[0].toLowerCase())}'s products..." value="${esc(S.q||'')}" oninput="S.q=this.value;render()">
+    ${sel('cat','All Categories',cats.map(c=>[c,c]))}
+    ${sel('status','All Status',[['Active','Active'],['Inactive','Inactive']])}
+    ${sel('stock','All Stock',[['in','In stock'],['low','Low stock'],['out','Out of stock']])}
+    <button class="btn" onclick="render()">Search</button>
+    <button class="btn2" onclick="S.q='';S.gf['${grp}']={cat:'',status:'',stock:''};render()">Reset</button>
+  </div>`}
+${SIDE?`<div class="grid grid-cols-1 xl:grid-cols-3 gap-4">`:''}
+  <div class="card overflow-hidden ${SIDE?'xl:col-span-2':''}">${all.length?`<div class="scroll-x"><table class="t"><thead><tr><th><input type="checkbox" class="w-4 h-4 accent-violet-700"></th><th>#</th><th>Image</th><th>Product Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead><tbody>${rows||'<tr><td colspan="9">'+empty('No products match this filter.')+'</td></tr>'}</tbody></table></div><div class="p-4 text-sm text-violet-900/70">Showing ${list.length} of ${all.length} products</div>`:empty('No products yet. Click "+ Add Product" to create one.')}</div>
+  ${SIDE?`<div class="space-y-4"><div class="card overflow-hidden"><div class="px-5 py-3 font-extrabold text-white" style="background:linear-gradient(90deg,#7c3aed,#6200EA)">${grp==='kids'?'Top Selling Toys':'Top Selling Products'} 🏆</div><div class="p-4">${(()=>{const t=[...all].sort((x,y)=>(Number(y.sold)||0)-(Number(x.sold)||0))[0];return t?`<div class="flex items-center gap-3">${thumb(t.img)}<div><div class="font-bold">${esc(t.name)}</div><div class="text-xs text-violet-900/60">Sold ${Number(t.sold)||0}</div></div></div>`:'<div class="text-sm text-violet-900/60">No sales yet</div>'})()}</div></div><div class="card p-5"><div class="font-extrabold mb-3">Quick Actions</div><div class="grid gap-2"><button class="btn2 text-left" onclick="go('baby')">📦 View All ${grp==='kids'?'Toys':'Products'}</button><button class="btn2 text-left" onclick="go('categories')">▦ Manage Categories</button><button class="btn2 text-left" onclick="go('orders')">🛒 Check Orders</button></div></div><div class="rounded-2xl p-5 text-white" style="background:linear-gradient(120deg,#7c3aed,#f472b6)"><div class="font-extrabold text-lg">${grp==='kids'?'Kids Love ZAVRA Toys!':'Upgrade Your Home with ZAVRA'}</div><div class="text-sm opacity-90">${grp==='kids'?'Best Quality · Great Price':'Stylish · Smart · Affordable'}</div><button class="mt-3 bg-white text-violet-900 font-bold rounded-xl px-4 py-2" onclick="productForm('${grp}')">${grp==='kids'?'Add toy →':'Shop Now →'}</button></div></div>`:''}
+  ${SIDE?'</div>':''}
+`;
+}
+PAGES.women=()=>fashion('women',"Women's Fashion Management","Manage women's fashion products and categories")+storePreview('women');
+PAGES.men=()=>fashion('men',"Men's Fashion Management","Manage men's fashion products and categories")+storePreview('men');
+PAGES.baby=()=>fashion('kids','Baby & Toys Management','Manage baby products and toys')+storePreview('kids');
+PAGES.kitchen=()=>fashion('kitchen','Kitchen & Home Management','Manage kitchen items and home decor')+storePreview('kitchen');
+S.wf=S.wf||'all';
+PAGES.wholesale=()=>{
+  const W=S.data.orders.filter(x=>x.wholesale===true||x.type==='wholesale');
+  const st=['Pending','Processing','Confirmed','Shipped','Delivered','Cancelled'];
+  const shown=W.filter(x=>!S.q||String(x.orderId||x._id).toLowerCase().includes(S.q.toLowerCase())||String(x.customer||'').toLowerCase().includes(S.q.toLowerCase()));
+  const rev=W.filter(x=>x.status==='Delivered').reduce((t,x)=>t+(Number(x.total)||0),0);
+  const avg=W.length?Math.round(W.reduce((t,x)=>t+(Number(x.total)||0),0)/W.length):0;
+  const byC={};W.forEach(x=>{const k=x.customer||'—';byC[k]=byC[k]||{name:k,city:x.city||'',total:0,n:0};byC[k].total+=Number(x.total)||0;byC[k].n++});
+  const clients=Object.values(byC).sort((x,y)=>y.total-x.total).slice(0,5);
+  const cust=Object.keys(byC).length;
+  const tc=(bg,label,val,note,icon)=>`<div class="rounded-2xl p-5 flex items-center gap-4" style="background:${bg}"><div class="w-16 h-16 rounded-2xl bg-white/60 grid place-items-center text-3xl">${icon}</div><div><div class="text-sm font-semibold text-violet-950/80">${label}</div><div class="text-2xl font-extrabold">${val}</div><div class="text-xs font-bold text-violet-900/50">${note}</div></div></div>`;
+  const sp=v=>{const m={Pending:'bg-amber-50 text-amber-700',Processing:'bg-sky-50 text-sky-700',Confirmed:'bg-emerald-50 text-emerald-700',Shipped:'bg-violet-50 text-violet-700',Delivered:'bg-emerald-50 text-emerald-700',Cancelled:'bg-rose-50 text-rose-700'};return `<span class="pill ${m[v]||'bg-slate-100 text-slate-700'}">${esc(v||'Pending')}</span>`};
+  const rows=shown.map(x=>`<tr class="hover:bg-violet-50/40"><td><input type="checkbox" class="w-4 h-4 accent-violet-700"></td><td class="font-bold">#${esc(x.orderId||x._id)}</td><td>${esc(x.customer||'')}</td><td>${esc(x.products||'')}</td><td>${Number(x.qty)||0} pcs</td><td><b>${money(x.total)}</b></td><td><select class="inp py-1 max-w-[140px]" onchange="setOrderStatus('${x._id}',this.value)">${st.map(v=>`<option ${v===x.status?'selected':''}>${v}</option>`).join('')}</select></td><td class="text-sm">${esc(x.date||'')}</td><td><div class="flex gap-2"><button class="btn px-2 py-1" onclick="openOrder('${x._id}')">👁</button></div></td></tr>`).join('');
+  const offers=S.data.coupons.filter(c=>c.b2b);
+  return `<div class="flex flex-wrap items-center gap-3"><div class="flex items-center gap-3 flex-1 min-w-[220px]"><div class="text-4xl">🤝</div><div><h1 class="text-2xl md:text-3xl font-extrabold">Wholesale &amp; Bulk Orders Management</h1><p class="text-violet-900/70">Manage wholesale customers, bulk orders and B2B offers</p></div></div><button class="btn" onclick="couponForm()">+ New B2B Offer</button></div>
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+    ${tc('linear-gradient(120deg,#e9d5ff,#d8b4fe)','Total Bulk Orders',W.length||'',W.length?'Live from store':'No bulk orders yet','👥')}
+    ${tc('linear-gradient(120deg,#bbf7d0,#86efac)','Wholesale Customers',cust||'',cust?'Live from store':'No wholesale customers yet','🛒')}
+    ${tc('linear-gradient(120deg,#fde68a,#fbbf24)','Bulk Revenue',rev?money(rev):'','Delivered bulk orders','₹')}
+    ${tc('linear-gradient(120deg,#bfdbfe,#93c5fd)','Avg Order Value',avg?money(avg):'','Per bulk order','📦')}
+  </div>
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <div class="card p-5 xl:col-span-2"><div class="flex justify-between items-center mb-3"><h3 class="font-extrabold">📈 Bulk Order Growth</h3><span class="pill bg-violet-50 text-violet-700">Last 30 days</span></div>${W.length?'<p class="text-sm text-violet-900/70">Growth fills in as bulk orders arrive.</p>':empty('No bulk order data yet.')}</div>
+    <div class="card p-5"><div class="flex justify-between items-center mb-3"><h3 class="font-extrabold">🏆 Top Wholesale Clients</h3></div>${clients.length?clients.map((c,i)=>`<div class="flex items-center gap-3 py-2 border-b border-violet-50 last:border-0"><div class="w-8 font-extrabold text-violet-700">${i+1}</div><div class="flex-1 min-w-0"><div class="font-bold truncate">${esc(c.name)}</div><div class="text-xs text-violet-900/60">${esc(c.city)}</div></div><div class="text-right"><div class="font-bold">${money(c.total)}</div><div class="text-xs text-violet-900/60">${c.n} orders</div></div></div>`).join(''):empty('No wholesale clients yet')}</div>
+  </div>
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <div class="card overflow-hidden xl:col-span-2"><div class="flex flex-wrap justify-between items-center gap-2 p-4"><h3 class="font-extrabold">📦 Bulk Orders List</h3><div class="flex gap-2"><input class="inp max-w-xs" placeholder="Search bulk orders..." value="${esc(S.q||'')}" oninput="S.q=this.value;render()"><button class="btn2" onclick="toast('Export will be added with the reports step')">⬇ Export</button></div></div>
+      ${W.length?`<div class="scroll-x"><table class="t"><thead><tr><th><input type="checkbox" class="w-4 h-4 accent-violet-700"></th><th>Order #</th><th>Client Name</th><th>Products</th><th>Quantity</th><th>Total Amount</th><th>Status</th><th>Order Date</th><th>Action</th></tr></thead><tbody>${rows||'<tr><td colspan="9">'+empty('No bulk orders match this search.')+'</td></tr>'}</tbody></table></div><div class="p-4 text-sm text-violet-900/70">Showing ${shown.length} of ${W.length} bulk orders</div>`:empty('No bulk orders yet. Wholesale orders from customers appear here.')}</div>
+    <div class="card p-5"><h3 class="font-extrabold mb-3">Quick Actions</h3><div class="grid gap-2"><button class="btn2 text-left" onclick="couponForm()">🎁 Add B2B Offer</button><button class="btn2 text-left" onclick="go('wholesale')">👥 Manage Clients</button><button class="btn2 text-left" onclick="go('reports')">📊 View Reports</button></div>
+      <div class="mt-4 text-sm">${offers.length?`<div class="font-bold mb-2">B2B offers</div>${offers.map(o=>`<div class="py-1 border-b border-violet-50">${esc(o.code)} — ${o.type==='percent'?o.value+'%':money(o.value)}</div>`).join('')}`:'<div class="text-violet-900/60">No B2B offers yet. Create one with "+ New B2B Offer".</div>'}</div></div>
+  </div>`;
+};
+S.inv=S.inv||{st:''};
+PAGES.inventory=()=>{
+  const P=S.data.products;const ql=(S.q||'').toLowerCase();const f=S.inv;
+  const min=x=>Number(x.minStock)||10;
+  const stat=x=>Number(x.stock)===0?'Out of Stock':Number(x.stock)<=min(x)?'Low Stock':'In Stock';
+  const list=P.filter(x=>(!ql||[x.name,x.sku,x.cat].join(' ').toLowerCase().includes(ql))&&(!f.st||stat(x)===f.st));
+  const inS=P.filter(x=>stat(x)==='In Stock').length, low=P.filter(x=>stat(x)==='Low Stock'), out=P.filter(x=>stat(x)==='Out of Stock');
+  const tc=(bg,label,val,note,icon)=>`<div class="rounded-2xl p-5 flex items-center gap-4" style="background:${bg}"><div class="w-16 h-16 rounded-2xl bg-white/60 grid place-items-center text-3xl">${icon}</div><div><div class="text-sm font-semibold text-violet-950/80">${label}</div><div class="text-2xl font-extrabold">${val}</div><div class="text-xs font-bold text-violet-900/50">${note}</div></div></div>`;
+  const pill=v=>{const m={'In Stock':'bg-emerald-50 text-emerald-700','Low Stock':'bg-amber-50 text-amber-700','Out of Stock':'bg-rose-50 text-rose-700'};return `<span class="pill ${m[v]}">${v}</span>`};
+  const cats={};P.forEach(x=>{const k=x.cat||'Uncategorized';cats[k]=(cats[k]||0)+1});
+  const catList=Object.entries(cats).sort((x,y)=>y[1]-x[1]).slice(0,6);
+  const rows=list.map(x=>`<tr class="hover:bg-violet-50/40"><td><input type="checkbox" class="w-4 h-4 accent-violet-700"></td><td><div class="flex items-center gap-3">${x.img?`<img src="${esc(x.img)}" class="w-12 h-12 rounded-lg object-cover" alt="">`:'<div class="w-12 h-12 rounded-lg bg-violet-50"></div>'}<div class="font-bold">${esc(x.name)}</div></div></td><td>#${esc(x.sku||'—')}</td><td>${esc(x.cat||'—')}</td><td class="font-extrabold">${Number(x.stock)||0}</td><td>${min(x)}</td><td>${pill(stat(x))}</td><td><div class="flex gap-2"><button class="btn2 px-2 py-1" onclick="restock('${x._id}')">+50</button><button class="btn px-2 py-1" onclick="editProduct('${x._id}')">✎</button></div></td></tr>`).join('');
+  return head('Inventory &amp; Stock Management','Track stock levels, manage inventory and avoid stockouts','<button class="btn2" onclick="S.inv.st=\'Low Stock\';render()">🔔 Stock Alerts</button><button class="btn2" onclick="toast(\'Import stock will be added with the upload step\')">⬆ Import Stock</button><button class="btn2" onclick="toast(\'Export will be added with the reports step\')">⬇ Export Stock</button><button class="btn" onclick="productForm()">+ Add Product</button>')+`
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+    ${tc('linear-gradient(120deg,#e9d5ff,#d8b4fe)','Total Products',P.length||'',P.length?'Live from store':'No products yet','📦')}
+    ${tc('linear-gradient(120deg,#bbf7d0,#86efac)','In Stock',inS||'','Above minimum stock','✅')}
+    ${tc('linear-gradient(120deg,#fde68a,#fdba74)','Low Stock',low.length||'','At or below minimum','⚠')}
+    ${tc('linear-gradient(120deg,#bfdbfe,#93c5fd)','Out of Stock',out.length||'','Zero stock','🏠')}
+  </div>
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <div class="xl:col-span-2 space-y-4">
+      <div class="card p-5"><div class="flex justify-between items-center mb-3"><h3 class="font-extrabold">📊 Stock Overview</h3><span class="pill bg-violet-50 text-violet-700">Last 30 days</span></div>${P.length?'<p class="text-sm text-violet-900/70">Stock history fills in as stock changes are recorded.</p>':empty('No stock data yet.')}</div>
+    </div>
+    <div class="card p-5"><h3 class="font-extrabold mb-3">🗂 Stock by Category</h3>${catList.length?catList.map(([k,v])=>`<div class="flex justify-between py-2 border-b border-violet-50 last:border-0 text-sm"><span class="font-semibold">${esc(k)}</span><span class="text-violet-900/70">${Math.round(v*100/P.length)}% · ${v}</span></div>`).join(''):empty('No categories yet')}</div>
+  </div>
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <div class="card overflow-hidden xl:col-span-2"><div class="flex flex-wrap justify-between items-center gap-2 p-4"><h3 class="font-extrabold">📋 Product Stock List</h3><div class="flex flex-wrap gap-2"><input class="inp max-w-xs" placeholder="Search product..." value="${esc(S.q||'')}" oninput="S.q=this.value;render()"><select class="inp" style="max-width:170px" onchange="S.inv.st=this.value;render()"><option value="">All Status</option><option ${f.st==='In Stock'?'selected':''}>In Stock</option><option ${f.st==='Low Stock'?'selected':''}>Low Stock</option><option ${f.st==='Out of Stock'?'selected':''}>Out of Stock</option></select></div></div>
+      ${P.length?`<div class="scroll-x"><table class="t"><thead><tr><th><input type="checkbox" class="w-4 h-4 accent-violet-700"></th><th>Product</th><th>SKU</th><th>Category</th><th>Current Stock</th><th>Min Stock</th><th>Status</th><th>Action</th></tr></thead><tbody>${rows||'<tr><td colspan="8">'+empty('No products match this filter.')+'</td></tr>'}</tbody></table></div><div class="p-4 text-sm text-violet-900/70">Showing ${list.length} of ${P.length} products</div>`:empty('No products yet. Add products to track stock.')}</div>
+    <div class="space-y-4">
+      <div class="card p-5"><div class="flex justify-between items-center mb-3"><h3 class="font-extrabold">⚠ Stock Alerts</h3><button class="text-sm font-bold text-brand-600" onclick="S.inv.st='Low Stock';render()">View All →</button></div>${[...out,...low].slice(0,4).map(x=>`<div class="flex items-center gap-3 py-2 border-b border-violet-50 last:border-0">${thumb(x.img)}<div class="flex-1 min-w-0"><div class="font-bold text-sm truncate">${esc(x.name)}</div><span class="pill ${Number(x.stock)===0?'bg-rose-50 text-rose-700':'bg-amber-50 text-amber-700'}">${Number(x.stock)===0?'Out of stock':'Only '+Number(x.stock)+' left'}</span></div></div>`).join('')||empty('No stock alerts. Stock levels are fine.')}</div>
+      <div class="card p-5"><div class="font-extrabold mb-3">⚙ Stock Management Actions</div><div class="grid gap-2"><button class="btn w-full" onclick="toast('Pick a product in the list and use +50 or Edit')">Update Stock</button><button class="btn2 w-full" onclick="toast('Bulk stock update will be added with the upload step')">Bulk Stock Update</button><button class="btn2 w-full" onclick="toast('Stock adjustments will be added with the stock history step')">Add Stock Adjustment</button><button class="btn2 w-full" onclick="go('reports')">View Stock Reports</button></div></div>
+    </div>
+  </div>`;
+};
+S.cp=S.cp||{st:'',ty:'',q:'',page:1,per:10,edit:'',ok:'',chk:[]};
+const CP_ST={Active:'bg-emerald-50 text-emerald-700',Expired:'bg-rose-50 text-rose-700',Paused:'bg-slate-100 text-slate-700'};
+function cpStatus(c){const today=new Date().toISOString().slice(0,10);if(c.expires&&c.expires<today)return 'Expired';if(c.active===false)return 'Paused';return 'Active'}
+function cpVal(c){return c.type==='percent'?(Number(c.value)||0)+'%':money(Number(c.value)||0)}
+function cpType(c){return c.type==='percent'?'Percentage':'Flat'}
+function cpList(){const q=(S.cp.q||'').toLowerCase();return S.data.coupons.filter(c=>(!S.cp.st||cpStatus(c)===S.cp.st)&&(!S.cp.ty||(c.type||'flat')===S.cp.ty)&&(!q||[c.code,c.name].join(' ').toLowerCase().includes(q)))}
+function cpSetFilter(k,v){S.cp[k]=v;S.cp.page=1;render()}
+function cpChip(v){S.cp.st=v;S.cp.page=1;render()}
+function cpPage(n){S.cp.page=n;render()}
+function couponForm(id){S.cp.edit=id||'';S.cp.ok='';go('coupons')}
+function cpCancelEdit(){S.cp.edit='';render()}
+function viewCoupon(id){const c=S.data.coupons.find(x=>x._id===id);if(!c)return;const orders=S.data.orders.filter(o=>(o.coupon||o.couponCode)===c.code);
+  openModal(`<h3 class="text-xl font-extrabold mb-3">Coupon ${esc(c.code)}</h3><div class="grid grid-cols-2 gap-3 text-sm">
+  <div><div class="text-violet-900/60">Type</div><div class="font-bold">${cpType(c)}</div></div><div><div class="text-violet-900/60">Value</div><div class="font-bold">${cpVal(c)}</div></div>
+  <div><div class="text-violet-900/60">Min order</div><div class="font-bold">${money(Number(c.min)||0)}</div></div><div><div class="text-violet-900/60">Valid till</div><div class="font-bold">${esc(c.expires||'—')}</div></div>
+  <div><div class="text-violet-900/60">Status</div><div class="font-bold">${cpStatus(c)}</div></div><div><div class="text-violet-900/60">Times used</div><div class="font-bold">${Number(c.used)||0}</div></div>
+  <div class="col-span-2"><div class="text-violet-900/60">Orders using this code (live)</div><div class="font-bold">${orders.length}</div></div></div>
+  <div class="flex justify-end gap-2 mt-5"><button class="btn2" onclick="closeModal();couponForm('${c._id}')">Edit</button><button class="btn" onclick="closeModal()">Close</button></div>`)}
+async function saveCoupon(e){e.preventDefault();
+  const code=$('#cpCode').value.trim().toUpperCase();const type=(document.querySelector('input[name=cpType]:checked')||{}).value||'flat';
+  const value=Number($('#cpVal').value);const min=Number($('#cpMin').value)||0;const expires=$('#cpExp').value;
+  if(!code)return toast('Enter a coupon code');if(!(value>0))return toast('Enter a discount value');
+  if(type==='percent'&&value>100)return toast('Percentage cannot be above 100');if(!expires)return toast('Select a valid till date');
+  if(S.data.coupons.some(c=>c.code===code&&c._id!==S.cp.edit))return toast('This coupon code already exists');
+  const rec={code,type,value,min,expires};
+  try{
+    if(S.cp.edit){const id=S.cp.edit;await db.collection('coupons').doc(id).update(rec);const x=S.data.coupons.find(c=>c._id===id);if(x)Object.assign(x,rec);logActivity('Coupon '+code+' updated');S.cp.edit='';S.cp.ok=id;render();toast('Coupon updated')}
+    else{const full={...rec,active:true,used:0,createdAt:new Date().toISOString()};const ref=await db.collection('coupons').add(full);S.data.coupons.unshift({_id:ref.id,...full});logActivity('Coupon '+code+' created');S.cp.ok=ref.id;render();toast('Coupon created')}
+  }catch(err){toast('Save failed: '+(err.message||err.code))}}
+async function toggleCoupon(id,on){try{await db.collection('coupons').doc(id).update({active:!!on});const x=S.data.coupons.find(c=>c._id===id);if(x)x.active=!!on;logActivity('Coupon '+((x&&x.code)||id)+(on?' resumed':' paused'));render()}catch(err){toast('Update failed: '+(err.message||err.code))}}
+async function delCoupon(id){if(!confirm('Delete this coupon?'))return;try{await db.collection('coupons').doc(id).delete();const x=S.data.coupons.find(c=>c._id===id);S.data.coupons=S.data.coupons.filter(c=>c._id!==id);S.cp.chk=S.cp.chk.filter(v=>v!==id);logActivity('Coupon '+((x&&x.code)||id)+' deleted');if(S.cp.ok===id)S.cp.ok='';render();toast('Coupon deleted')}catch(err){toast('Delete failed: '+(err.message||err.code))}}
+function cpChk(id){const a=S.cp.chk;const i=a.indexOf(id);if(i<0)a.push(id);else a.splice(i,1);render()}
+function cpAllToggle(){const ids=cpList().map(c=>c._id);S.cp.chk=(ids.length&&S.cp.chk.length===ids.length)?[]:ids;render()}
+async function cpBulk(mode){const ids=S.cp.chk.slice();if(!ids.length)return;
+  try{if(mode==='delete'){if(!confirm('Delete '+ids.length+' coupons?'))return;await Promise.all(ids.map(id=>db.collection('coupons').doc(id).delete()));S.data.coupons=S.data.coupons.filter(c=>!ids.includes(c._id))}
+    else{const on=mode==='resume';await Promise.all(ids.map(id=>db.collection('coupons').doc(id).update({active:on})));ids.forEach(id=>{const x=S.data.coupons.find(c=>c._id===id);if(x)x.active=on})}
+    S.cp.chk=[];logActivity(ids.length+' coupons '+mode);render();toast('Done')}catch(err){toast('Update failed: '+(err.message||err.code))}}
+PAGES.coupons=()=>{
+  const C=S.data.coupons,cp=S.cp;const L=cpList();
+  const per=Number(cp.per)||10,pages=Math.max(1,Math.ceil(L.length/per));const cur=Math.min(cp.page||1,pages);const rows=L.slice((cur-1)*per,cur*per);
+  const n=s=>C.filter(c=>cpStatus(c)===s).length;
+  const used=C.reduce((t,c)=>t+(Number(c.used)||0),0);
+  const given=S.data.orders.reduce((t,o)=>t+((o.coupon||o.couponCode)?(Number(o.discount||o.couponDiscount)||0):0),0);
+  const ed=C.find(c=>c._id===cp.edit)||{};const okc=C.find(c=>c._id===cp.ok);
+  const tl=(label,val,sub,bg,ic,fg)=>`<div class="tile" style="background:${bg}"><div class="w-14 h-14 rounded-2xl grid place-items-center text-2xl bg-white/70">${ic}</div><div class="flex-1 min-w-0"><div class="text-sm text-violet-900/70">${label}</div><div class="text-2xl font-extrabold" style="color:${fg}">${val}</div><div class="text-xs font-bold text-violet-900/50">${sub}</div></div></div>`;
+  const chip=(v,label,k)=>`<button onclick="cpChip('${v}')" class="px-4 py-2 rounded-xl text-sm font-bold border ${cp.st===v?'bg-[#6200EA] text-white border-[#6200EA]':'bg-white text-violet-900 border-[#ddd3f3]'}">${label} (${k})</button>`;
+  const allIds=L.map(c=>c._id);const allOn=allIds.length&&cp.chk.length===allIds.length;
+  const body=rows.length?rows.map((c,i)=>`<tr class="border-t border-violet-50 hover:bg-violet-50/50">
+    <td class="p-3"><input type="checkbox" ${cp.chk.includes(c._id)?'checked':''} onclick="cpChk('${c._id}')"></td>
+    <td class="p-3 text-sm">${(cur-1)*per+i+1}</td><td class="p-3 text-sm font-extrabold">${esc(c.code)}</td>
+    <td class="p-3 text-sm"><span class="${c.type==='percent'?'underline':''}">${cpType(c)}</span></td>
+    <td class="p-3 text-sm">${cpVal(c)}</td><td class="p-3 text-sm">${money(Number(c.min)||0)}</td><td class="p-3 text-sm">${esc(c.expires||'—')}</td>
+    <td class="p-3"><span class="pill ${CP_ST[cpStatus(c)]}">${cpStatus(c)}</span></td><td class="p-3 text-sm">${Number(c.used)||0}</td>
+    <td class="p-3"><div class="flex gap-1"><button class="btn2 py-1 px-2" title="View" onclick="viewCoupon('${c._id}')">👁</button><button class="btn py-1 px-2" title="Edit" onclick="couponForm('${c._id}')">✎</button><button class="btnx" title="Delete" onclick="delCoupon('${c._id}')">🗑</button><label class="switch ml-1" title="Active"><input type="checkbox" ${c.active!==false?'checked':''} onchange="toggleCoupon('${c._id}',this.checked)"><span class="slider"></span></label></div></td></tr>`).join('')
+    :`<tr><td colspan="10">${empty(C.length?'No coupons match these filters.':'No coupons yet. Create your first coupon on the right.')}</td></tr>`;
+  const pageBtns=Array.from({length:Math.min(pages,5)},(_,i)=>i+1).map(k=>`<button onclick="cpPage(${k})" class="w-9 h-9 rounded-xl text-sm font-bold ${k===cur?'bg-[#6200EA] text-white':'bg-white border border-[#ddd3f3] text-violet-900'}">${k}</button>`).join('');
+  const bulk=cp.chk.length?`<div class="flex flex-wrap items-center gap-2 p-3 bg-violet-50 rounded-xl m-3"><span class="text-sm font-bold">${cp.chk.length} selected</span><button class="btn2 py-1" onclick="cpBulk('pause')">Pause</button><button class="btn2 py-1" onclick="cpBulk('resume')">Resume</button><button class="btnx" onclick="cpBulk('delete')">Delete</button><button class="btn2 py-1" onclick="S.cp.chk=[];render()">Clear</button></div>`:'';
+  const popular=C.filter(c=>(Number(c.used)||0)>0).sort((a,b)=>(b.used||0)-(a.used||0)).slice(0,4);
+  const topBars=C.slice().sort((a,b)=>(b.used||0)-(a.used||0)).slice(0,8);const mx=Math.max(1,...topBars.map(c=>Number(c.used)||0));
+  const form=`<form onsubmit="saveCoupon(event)" class="p-5 space-y-4">
+    <div><label class="lbl">Coupon Code *</label><input id="cpCode" class="inp uppercase" placeholder="Enter coupon code" value="${esc(ed.code||'')}" maxlength="30" required></div>
+    <div><label class="lbl">Discount Type *</label><div class="flex gap-6 text-sm font-semibold"><label class="flex items-center gap-2"><input type="radio" name="cpType" value="flat" ${(ed.type||'flat')!=='percent'?'checked':''}> Flat Amount</label><label class="flex items-center gap-2"><input type="radio" name="cpType" value="percent" ${ed.type==='percent'?'checked':''}> Percentage</label></div></div>
+    <div><label class="lbl">Discount Value *</label><input id="cpVal" type="number" min="0" step="any" class="inp" placeholder="Enter value" value="${ed.value!=null?esc(String(ed.value)):''}" required></div>
+    <div><label class="lbl">Minimum Order Amount</label><input id="cpMin" type="number" min="0" step="any" class="inp" placeholder="Enter minimum order" value="${ed.min!=null?esc(String(ed.min)):''}"></div>
+    <div><label class="lbl">Valid Till *</label><input id="cpExp" type="date" class="inp" value="${esc(ed.expires||'')}" required></div>
+    <button class="btn w-full" type="submit">${cp.edit?'Save Changes':'Create Coupon'}</button>
+    ${cp.edit?`<button class="btn2 w-full" type="button" onclick="cpCancelEdit()">Cancel edit</button>`:''}
+  </form>`;
+  const success=okc?`<div class="m-5 rounded-2xl p-4 bg-emerald-50 border border-emerald-200 flex gap-3"><div class="w-10 h-10 rounded-full bg-emerald-500 text-white grid place-items-center">✓</div><div class="flex-1"><div class="font-extrabold text-emerald-800">Coupon ${cp.edit?'Updated':'Created'} Successfully!</div><div class="text-sm text-emerald-900/70">${esc(okc.code)} is saved.</div><button class="btn mt-2" onclick="viewCoupon('${okc._id}')">View Coupon</button></div><button class="text-emerald-800" onclick="S.cp.ok='';render()" aria-label="Dismiss">✕</button></div>`:'';
+  return head('Coupons &amp; Discount Management','Create offers that bring customers back.',
+    `<button class="btn2" onclick="toast('Coupon settings are not connected yet')">⚙ Coupon Settings</button><button class="btn2" onclick="toast('Discount rules are not connected yet')">🎁 Discount Rules</button><button class="btn" onclick="couponForm('')">＋ Add Coupon</button>`)+`
+  <div class="grid grid-cols-2 xl:grid-cols-4 gap-4">
+    ${tl('Total Coupons',String(C.length).padStart(2,'0'),C.length?'Created':'Create your first coupon','#e8f0ff','🎟️','#1d4ed8')}
+    ${tl('Active Coupons',String(n('Active')).padStart(2,'0'),n('Active')?'Live for customers':'None live yet','#e7f9ee','✅','#15803d')}
+    ${tl('Used Coupons',String(used).padStart(2,'0'),used?'Total redemptions':'No redemptions yet','#fff3e2','%','#c2410c')}
+    ${tl('Total Discount Given',given?money(given):'₹00',given?'From orders':'No discounts given yet','#f1e9ff','🛒','#6200EA')}
+  </div>
+  <div class="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-4 items-start">
+    <div class="space-y-4 min-w-0">
+      <div class="flex flex-wrap gap-2">${chip('','All Coupons',C.length)}${chip('Active','Active',n('Active'))}${chip('Expired','Expired',n('Expired'))}${chip('Paused','Paused',n('Paused'))}</div>
+      <div class="flex flex-wrap gap-2">
+        <div class="flex-1 min-w-[220px] flex items-center gap-2 bg-white border border-[#ddd3f3] rounded-xl px-3"><span>🔍</span><input class="w-full py-2.5 outline-none text-sm" placeholder="Search coupons by code or name..." value="${esc(cp.q||'')}" onchange="S.cp.q=this.value;S.cp.page=1;render()"></div>
+        <select class="inp w-auto" onchange="cpSetFilter('st',this.value)">${['','Active','Expired','Paused'].map(o=>`<option value="${o}" ${cp.st===o?'selected':''}>${o?o:'All Status'}</option>`).join('')}</select>
+        <select class="inp w-auto" onchange="cpSetFilter('ty',this.value)">${[['','All Discount Type'],['flat','Flat'],['percent','Percentage']].map(o=>`<option value="${o[0]}" ${cp.ty===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select>
+        <button class="btn2" onclick="render()">⛃ Filter</button>
+      </div>
+      <div class="card overflow-hidden">
+        ${bulk}
+        <div class="overflow-x-auto"><table class="w-full text-left min-w-[900px]">
+          <thead class="bg-violet-50 text-sm text-violet-900/70"><tr><th class="p-3 w-10"><input type="checkbox" ${allOn?'checked':''} onclick="cpAllToggle()"></th><th class="p-3">#</th><th class="p-3">Coupon Code</th><th class="p-3">Discount Type</th><th class="p-3">Discount Value</th><th class="p-3">Min Order</th><th class="p-3">Valid Till</th><th class="p-3">Status</th><th class="p-3">Usage</th><th class="p-3">Action</th></tr></thead>
+          <tbody>${body}</tbody></table></div>
+        <div class="flex flex-wrap items-center justify-between gap-2 p-3 text-sm">
+          <span>Showing ${L.length?(cur-1)*per+1:0} to ${Math.min(cur*per,L.length)} of ${L.length} coupons</span>
+          <div class="flex items-center gap-2"><button class="w-9 h-9 rounded-xl border border-[#ddd3f3] bg-white" onclick="cpPage(${Math.max(1,cur-1)})">‹</button>${pageBtns}<button class="w-9 h-9 rounded-xl border border-[#ddd3f3] bg-white" onclick="cpPage(${Math.min(pages,cur+1)})">›</button>
+          <select class="inp w-auto py-1" onchange="S.cp.per=Number(this.value);S.cp.page=1;render()">${[10,25,50].map(v=>`<option ${per===v?'selected':''}>${v}</option>`).join('')}</select></div>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="card p-5"><div class="flex justify-between items-center mb-3"><div class="font-extrabold">Popular Coupons</div><button class="text-sm font-bold text-[#6200EA]" onclick="cpChip('')">View All →</button></div>
+          ${popular.length?`<div class="space-y-3">${popular.map((c,i)=>`<div class="flex items-center gap-3"><span class="w-7 h-7 rounded-full bg-violet-100 text-violet-700 font-bold grid place-items-center text-sm">${i+1}</span><div class="flex-1"><div class="font-extrabold">${esc(c.code)}</div><div class="text-xs text-violet-900/60">Used ${Number(c.used)||0} times</div></div><span class="pill bg-violet-50 text-violet-700">${cpVal(c)} Off</span></div>`).join('')}</div>`:empty('No coupon usage yet.')}</div>
+        <div class="card p-5"><div class="flex justify-between items-center mb-3"><div class="font-extrabold">Discount Analytics</div><button class="text-sm font-bold text-[#6200EA]" onclick="toast('Detailed reports come with the analytics backend')">View Report →</button></div>
+          <div class="text-2xl font-extrabold">${given?money(given):'₹00'}</div><div class="text-xs text-violet-900/60 mb-3">Total Discount Given</div>
+          ${topBars.length?`<div class="flex items-end gap-2 h-24">${topBars.map(c=>`<div title="${esc(c.code)}: ${Number(c.used)||0}" class="flex-1 rounded-t-md bg-violet-400" style="height:${Math.max(4,Math.round((Number(c.used)||0)*100/mx))}%"></div>`).join('')}</div>`:'<div class="h-24 grid place-items-center text-sm text-violet-900/60">No usage yet</div>'}</div>
+      </div>
+    </div>
+    <div class="space-y-4">
+      <div class="card overflow-hidden">
+        <div class="px-5 py-3 font-extrabold text-white flex justify-between items-center" style="background:linear-gradient(90deg,#7c3aed,#6200EA)"><span>${cp.edit?'Edit Coupon':'Create New Coupon'}</span>${cp.edit?`<button class="text-white" onclick="cpCancelEdit()" aria-label="Close">✕</button>`:''}</div>
+        ${form}
+      </div>
+      ${success?`<div class="card overflow-hidden">${success}</div>`:''}
+    </div>
+  </div>`;
+};
+S.rp=S.rp||'30D';
+PAGES.reports=()=>{
+  const o=S.data.orders,p=S.data.products,c=S.data.customers;
+  const delivered=o.filter(x=>x.status==='Delivered');
+  const rev=delivered.reduce((t,x)=>t+(Number(x.total)||0),0);
+  const sales=o.reduce((t,x)=>t+(Number(x.total)||0),0);
+  const tc=(bg,label,val,note,icon)=>`<div class="rounded-2xl p-5 flex items-center gap-4" style="background:${bg}"><div class="w-16 h-16 rounded-2xl bg-white/60 grid place-items-center text-3xl">${icon}</div><div><div class="text-sm font-semibold text-violet-950/80">${label}</div><div class="text-2xl font-extrabold">${val}</div><div class="text-xs font-bold text-violet-900/50">${note}</div></div></div>`;
+  const chip=(k)=>`<button class="${S.rp===k?'btn':'btn2'}" onclick="S.rp='${k}';render()">${k==='1Y'?'1Y':k}</button>`;
+  const cats={};p.forEach(x=>{const k=x.cat||'Uncategorized';cats[k]=(cats[k]||0)+1});
+  const catList=Object.entries(cats).sort((x,y)=>y[1]-x[1]).slice(0,5);
+  const recent=o.slice(0,5);
+  const sp=v=>{const m={Delivered:'bg-emerald-50 text-emerald-700',Processing:'bg-sky-50 text-sky-700',Shipped:'bg-violet-50 text-violet-700',Pending:'bg-amber-50 text-amber-700',Cancelled:'bg-rose-50 text-rose-700',Returned:'bg-fuchsia-50 text-fuchsia-700'};return `<span class="pill ${m[v]||'bg-slate-100 text-slate-700'}">${esc(v||'Pending')}</span>`};
+  return head('Reports &amp; Analytics Dashboard','Track your business performance with detailed insights','<div class="flex gap-1">'+['7D','30D','90D','1Y'].map(chip).join('')+'</div><button class="btn" onclick="toast(\'Export will be added with this step\')">⬇ Export Report</button>')+`
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+    ${tc('linear-gradient(120deg,#e9d5ff,#d8b4fe)','Total Sales',sales?money(sales):'','Live from orders','🛒')}
+    ${tc('linear-gradient(120deg,#bbf7d0,#86efac)','Total Orders',o.length||'',o.length?'Live from store':'No orders yet','📦')}
+    ${tc('linear-gradient(120deg,#fed7aa,#fdba74)','Total Customers',c.length||'',c.length?'Live from store':'No customers yet','👥')}
+    ${tc('linear-gradient(120deg,#bfdbfe,#93c5fd)','Total Revenue',rev?money(rev):'','Delivered orders','₹')}
+  </div>
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <div class="card p-5 xl:col-span-2"><div class="flex justify-between items-center mb-3"><h3 class="font-extrabold">📊 Sales Overview</h3><span class="pill bg-violet-50 text-violet-700">${esc(S.rp)}</span></div>${o.length?'<p class="text-sm text-violet-900/70">Chart fills in as orders arrive.</p>':empty('No sales data yet. The chart fills in when orders arrive.')}</div>
+    <div class="card p-5"><div class="flex justify-between items-center mb-3"><h3 class="font-extrabold">🏆 Top Selling Categories</h3></div>${catList.length?catList.map(([k,v])=>`<div class="flex justify-between py-2 border-b border-violet-50 last:border-0 text-sm"><span class="font-semibold">${esc(k)}</span><span class="text-violet-900/70">${Math.round(v*100/p.length)}% · ${v} products</span></div>`).join(''):empty('No categories yet')}</div>
+  </div>
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <div class="card p-5"><h3 class="font-extrabold mb-3">📍 Sales by Region</h3>${o.some(x=>x.city)?'<p class="text-sm text-violet-900/70">Region breakdown appears from order addresses.</p>':empty('No region data yet. It appears once orders have delivery addresses.')}</div>
+    <div class="card p-5 xl:col-span-1"><div class="flex justify-between items-center mb-3"><h3 class="font-extrabold">🛒 Recent Orders</h3><button class="text-sm font-bold text-brand-600" onclick="go('orders')">View All →</button></div>${recent.length?`<div class="scroll-x"><table class="t"><thead><tr><th>Order ID</th><th>Customer</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead><tbody>${recent.map(x=>`<tr class="cursor-pointer hover:bg-violet-50/40" onclick="openOrder('${x._id}')"><td class="font-bold">#${esc(x.orderId||x._id)}</td><td>${esc(x.customer||'')}</td><td>${money(x.total)}</td><td>${sp(x.status)}</td><td class="text-xs">${esc(x.date||'')}</td></tr>`).join('')}</tbody></table></div>`:empty('No orders yet')}</div>
+    <div class="card p-5"><h3 class="font-extrabold mb-3">🌐 Traffic Analytics</h3>${empty('Traffic analytics not connected yet. Visitors and sources appear once analytics is connected.')}</div>
+  </div>`;
+};
+PAGES.profile=()=>{
+  const u=auth.currentUser||{};const em=u.email||'';const created=u.metadata&&u.metadata.creationTime?new Date(u.metadata.creationTime).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):'—';
+  const checks=[['Signed in with admin email',!!em,true],['Email verified',!!u.emailVerified,true],['Activity monitoring (admin actions are logged)',true,true],['Two-factor authentication','Not connected',false],['Login alerts','Not connected',false]];
+  const okN=checks.filter(c=>c[1]===true).length;const pct=Math.round(okN*100/checks.length);
+  const row=c=>`<div class="flex items-center gap-3 py-2"><span class="w-6 h-6 rounded-full grid place-items-center text-white text-xs ${c[1]===true?'bg-emerald-500':'bg-slate-300'}">${c[1]===true?'✓':'•'}</span><span class="text-sm font-semibold flex-1">${c[0]}</span><span class="text-xs font-bold ${c[1]===true?'text-emerald-700':'text-slate-500'}">${c[1]===true?'Yes':(typeof c[1]==='string'?c[1]:'No')}</span></div>`;
+  const ini='SA';
+  return head('Admin Profile &amp; Security Management','Manage your profile, security settings and account access','<button class="btn2" onclick="go(\'notifications\')">🕘 View Activity</button><button class="btn2" onclick="go(\'notifications\')">🛡 Security Logs</button><button class="btn" onclick="document.getElementById(\'pwCard\').scrollIntoView({behavior:\'smooth\'})">🔒 Change Password</button>')+`
+  <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+    <div class="card overflow-hidden"><div class="px-5 py-3 font-extrabold text-white flex justify-between" style="background:linear-gradient(90deg,#7c3aed,#6200EA)"><span>Admin Profile Information</span><span class="text-sm opacity-80">Not editable yet</span></div>
+      <div class="p-5 flex flex-wrap gap-6 items-center"><div class="text-center"><div class="w-28 h-28 rounded-full bg-violet-100 text-violet-700 font-extrabold text-3xl grid place-items-center mx-auto">${ini}</div><span class="pill bg-emerald-50 text-emerald-700 mt-2">● Active</span></div>
+      <div class="flex-1 min-w-[200px] space-y-2 text-sm"><div class="text-xl font-extrabold">Super Admin <span class="pill bg-violet-100 text-violet-700 ml-2">Administrator</span></div><div>✉ ${esc(em||'—')}</div><div>📞 Phone not set</div><div>📍 Location not set</div><div>📅 Joined: ${created}</div></div></div></div>
+    <div class="card overflow-hidden"><div class="px-5 py-3 font-extrabold text-white" style="background:linear-gradient(90deg,#7c3aed,#6200EA)">Account Security Status</div>
+      <div class="p-5"><div class="flex items-center gap-5"><div class="w-24 h-24 rounded-full grid place-items-center text-2xl" style="background:#dcfce7">🛡</div><div><div class="text-sm">Your account security</div><div class="text-2xl font-extrabold ${pct>=60?'text-emerald-600':'text-amber-600'}">${pct>=60?'Good':'Needs attention'}</div><div class="text-xs text-violet-900/60">Based only on checks that are live</div></div></div>
+      <div class="mt-4">${checks.map(row).join('')}</div>
+      <div class="mt-3"><div class="flex justify-between text-sm font-bold mb-1"><span>Security score</span><span>${pct}%</span></div><div class="h-2 bg-violet-100 rounded-full overflow-hidden"><div class="h-2 bg-emerald-500" style="width:${pct}%"></div></div></div></div></div>
+  </div>
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <div class="card overflow-hidden" id="pwCard"><div class="px-5 py-3 font-extrabold text-white" style="background:linear-gradient(90deg,#7c3aed,#6200EA)">🔒 Change Password</div>
+      <form class="p-5 space-y-3" onsubmit="changeAdminPassword(event)"><div><label class="lbl">Current Password</label><input id="pwCur" class="inp" type="password" required></div><div><label class="lbl">New Password (min 8 characters)</label><input id="pwNew" class="inp" type="password" minlength="8" required></div><div><label class="lbl">Confirm New Password</label><input id="pwConf" class="inp" type="password" minlength="8" required></div><button class="btn w-full" type="submit">Update Password</button></form></div>
+    <div class="card overflow-hidden"><div class="px-5 py-3 font-extrabold text-white" style="background:linear-gradient(90deg,#7c3aed,#6200EA)">🛡 Two-Factor Authentication</div><div class="p-5"><p class="text-sm text-violet-900/70">2FA is not connected yet.</p><button class="btn2 w-full mt-3" disabled style="opacity:.6">Manage 2FA</button></div></div>
+    <div class="card overflow-hidden"><div class="px-5 py-3 font-extrabold text-white" style="background:linear-gradient(90deg,#7c3aed,#6200EA)">⚙ Account Actions</div><div class="p-5 grid grid-cols-2 gap-2"><button class="btn2" onclick="exportAdminData()">⬇ Download Account Data</button><button class="btn2" onclick="toast('Deactivate needs the backend. Not available yet.')">⏸ Deactivate Account</button><button class="btnx py-2" onclick="toast('Delete account needs the backend. Not available here.')">🗑 Delete Account</button><button class="btn2" onclick="toast('Profile editing will be added later')">👁 View Profile</button></div></div>
+  </div>
+  <div class="card p-5"><div class="font-extrabold mb-2">Login Activity</div>${empty('Login activity is not connected yet.')}</div>`;
+};
+async function changeAdminPassword(e){e.preventDefault();const cur=$('#pwCur').value,nw=$('#pwNew').value,cf=$('#pwConf').value;
+  if(nw!==cf)return toast('New passwords do not match');if(nw.length<8)return toast('Password must be at least 8 characters');
+  const u=auth.currentUser;if(!u)return toast('Not signed in');
+  try{const cred=firebase.auth.EmailAuthProvider.credential(u.email,cur);await u.reauthenticateWithCredential(cred);await u.updatePassword(nw);e.target.reset();toast('Password updated')}
+  catch(err){toast(err.code==='auth/wrong-password'||err.code==='auth/invalid-credential'?'Current password is wrong':'Update failed: '+(err.message||err.code))}}
+function exportAdminData(){const d={email:(auth.currentUser||{}).email||'',products:S.data.products.length,orders:S.data.orders.length,customers:S.data.customers.length,activity:S.data.activity};const b=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const l=document.createElement('a');l.href=u;l.download='zavra_admin_data.json';document.body.appendChild(l);l.click();l.remove();URL.revokeObjectURL(u)}
+
+S.sp={st:'',pr:'',stt:'',q:'',page:1,sel:'',chk:[]};
+const TK_PR={High:'bg-rose-50 text-rose-700',Medium:'bg-amber-50 text-amber-700',Low:'bg-sky-50 text-sky-700'};
+const TK_ST={'New':'bg-sky-50 text-sky-700','In Progress':'bg-emerald-50 text-emerald-700','Pending':'bg-amber-50 text-amber-700','Resolved':'bg-emerald-50 text-emerald-700','Closed':'bg-slate-100 text-slate-700','Spam':'bg-rose-50 text-rose-700'};
+function tkPill(map,s){return `<span class="pill ${map[s]||'bg-slate-100 text-slate-700'}">${esc(s||'—')}</span>`}
+function tkDate(v){if(!v)return '—';const d=new Date(v);return isNaN(d)?'—':d.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}
+function tkTime(v){if(!v)return '—';const d=new Date(v);return isNaN(d)?'—':d.toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}
+function tkStats(){const t=S.data.tickets;const c=s=>t.filter(x=>x.status===s).length;const rated=t.filter(x=>Number(x.rating)>0);
+  const avg=rated.length?rated.reduce((a,x)=>a+Number(x.rating),0)/rated.length:0;const resolved=c('Resolved')+c('Closed');const pending=c('New')+c('In Progress')+c('Pending');
+  const frt=[];t.forEach(x=>{const a=(x.replies||[]).find(r=>r.by==='admin');if(a&&x.date){const h=(new Date(a.at)-new Date(x.date))/3600000;if(h>=0)frt.push(h)}});
+  const art=frt.length?frt.reduce((a,b)=>a+b,0)/frt.length:0;
+  const sat=rated.length?Math.round(rated.filter(x=>Number(x.rating)>=4).length*100/rated.length):0;
+  return {total:t.length,resolved,pending,avg,rated:rated.length,art,sat,resRate:t.length?Math.round(resolved*100/t.length):0,c}}
+function supList(){const T=S.data.tickets,sp=S.sp;
+  const base=S.sub==='new'?T.filter(x=>x.status==='New'):S.sub==='resolved'?T.filter(x=>x.status==='Resolved'||x.status==='Closed'):S.sub==='feedback'?T.filter(x=>Number(x.rating)>0):T;
+  const q=(sp.q||'').toLowerCase();
+  return base.filter(x=>(!sp.st||x.status===sp.st)&&(!sp.pr||x.priority===sp.pr)&&(!sp.stt||x.status===sp.stt)&&(!q||[x.id,x.customer,x.subject].join(' ').toLowerCase().includes(q)))}
+function supChip(v){S.sp.st=v;S.sp.page=1;render()}
+function supPage(n){S.sp.page=n;render()}
+function supSel(id){S.sp.sel=id;render()}
+function supChk(id){const a=S.sp.chk;const i=a.indexOf(id);if(i<0)a.push(id);else a.splice(i,1);render()}
+function supAllToggle(){const ids=supList().map(x=>x._id);S.sp.chk=(S.sp.chk.length===ids.length&&ids.length)?[]:ids;render()}
+async function supBulk(st){const ids=S.sp.chk.slice();if(!ids.length)return;try{await Promise.all(ids.map(id=>db.collection('tickets').doc(id).update({status:st})));ids.forEach(id=>{const x=S.data.tickets.find(t=>t._id===id);if(x)x.status=st});S.sp.chk=[];logActivity(ids.length+' tickets set to '+st);render();toast('Tickets updated')}catch(err){toast('Update failed: '+(err.message||err.code))}}
+async function setTicketStatus(id,st){try{await db.collection('tickets').doc(id).update({status:st});const x=S.data.tickets.find(t=>t._id===id);if(x)x.status=st;logActivity('Ticket '+((x&&x.id)||id)+' set to '+st);render();toast('Status updated')}catch(err){toast('Update failed: '+(err.message||err.code))}}
+async function sendTicketReply(id){const text=(($('#tkReply')||{}).value||'').trim();if(!text)return toast('Type a reply first');
+  const r={by:'admin',text,at:new Date().toISOString()};const x=S.data.tickets.find(t=>t._id===id);const upd={replies:firebase.firestore.FieldValue.arrayUnion(r)};if(x&&x.status==='New')upd.status='In Progress';
+  try{await db.collection('tickets').doc(id).update(upd);if(x){x.replies=(x.replies||[]).concat([r]);if(upd.status)x.status=upd.status}logActivity('Reply saved on ticket '+((x&&x.id)||id));render();toast('Reply saved. Sending email to the customer is not connected yet')}catch(err){toast('Send failed: '+(err.message||err.code))}}
+function openTicketForm(){openModal(`<h3 class="text-xl font-extrabold mb-4">New Ticket</h3><form onsubmit="saveTicket(event)" class="grid gap-3">
+<div><label class="lbl">Customer name</label><input id="tkName" class="inp" required></div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><div><label class="lbl">Phone</label><input id="tkPhone" class="inp"></div><div><label class="lbl">Email</label><input id="tkEmail" type="email" class="inp"></div></div>
+<div><label class="lbl">Subject</label><input id="tkSubj" class="inp" required></div>
+<div><label class="lbl">Message</label><textarea id="tkMsg" class="inp" rows="4" required></textarea></div>
+<div><label class="lbl">Priority</label><select id="tkPrio" class="inp"><option>High</option><option selected>Medium</option><option>Low</option></select></div>
+<div class="flex justify-end gap-2"><button type="button" class="btn2" onclick="closeModal()">Cancel</button><button class="btn" type="submit">Create Ticket</button></div></form>`)}
+async function saveTicket(e){e.preventDefault();const n=Date.now();const id='TKT-'+String(10000+(n%89999));
+  const rec={id,customer:$('#tkName').value.trim(),phone:$('#tkPhone').value.trim(),email:$('#tkEmail').value.trim(),subject:$('#tkSubj').value.trim(),message:$('#tkMsg').value.trim(),priority:$('#tkPrio').value,status:'New',date:new Date().toISOString(),replies:[],rating:0};
+  try{const ref=await db.collection('tickets').add(rec);S.data.tickets.unshift({_id:ref.id,...rec});logActivity('Ticket '+id+' created');closeModal();S.sp.sel=ref.id;render();toast('Ticket created')}catch(err){toast('Save failed: '+(err.message||err.code))}}
+function exportTickets(){const L=supList();if(!L.length)return toast('No tickets to export');
+  const rows=[['Ticket ID','Customer','Phone','Email','Subject','Priority','Status','Date','Rating']].concat(L.map(x=>[x.id,x.customer,x.phone,x.email,x.subject,x.priority,x.status,x.date,x.rating||'']));
+  const csv=rows.map(r=>r.map(v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const u=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));const l=document.createElement('a');l.href=u;l.download='zavra_tickets.csv';document.body.appendChild(l);l.click();l.remove();URL.revokeObjectURL(u)}
+PAGES.support=()=>{
+  const T=S.data.tickets,sp=S.sp,st=tkStats();const L=supList();
+  const per=8,pages=Math.max(1,Math.ceil(L.length/per));const cur=Math.min(sp.page||1,pages);const rows=L.slice((cur-1)*per,cur*per);
+  const sel=T.find(x=>x._id===sp.sel);
+  const tl=(label,val,sub,bg,ic,fg)=>`<div class="tile" style="background:${bg}"><div class="w-14 h-14 rounded-2xl grid place-items-center text-2xl bg-white/70">${ic}</div><div class="flex-1 min-w-0"><div class="text-sm text-violet-900/70">${label}</div><div class="text-2xl font-extrabold" style="color:${fg}">${val}</div><div class="text-xs font-bold text-violet-900/50">${sub}</div></div></div>`;
+  const chip=(v,label,n)=>`<button onclick="supChip('${v}')" class="px-4 py-2 rounded-xl text-sm font-bold border ${sp.st===v?'bg-[#6200EA] text-white border-[#6200EA]':'bg-white text-violet-900 border-[#ddd3f3]'}">${label} (${n})</button>`;
+  const opt=(arr,cur)=>arr.map(o=>`<option value="${o}" ${cur===o?'selected':''}>${o||'All'}</option>`).join('');
+  const allIds=L.map(x=>x._id);const allOn=allIds.length&&S.sp.chk.length===allIds.length;
+  const body=rows.length?rows.map((x,i)=>`<tr class="border-t border-violet-50 hover:bg-violet-50/50 cursor-pointer ${sp.sel===x._id?'bg-violet-50':''}" onclick="supSel('${x._id}')">
+    <td class="p-3"><input type="checkbox" ${S.sp.chk.includes(x._id)?'checked':''} onclick="event.stopPropagation();supChk('${x._id}')"></td>
+    <td class="p-3 text-sm">${(cur-1)*per+i+1}</td><td class="p-3 text-sm font-bold">${esc(x.id||'')}</td>
+    <td class="p-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded-full bg-violet-100 text-violet-700 font-bold grid place-items-center text-sm">${esc((x.customer||'?').charAt(0).toUpperCase())}</div><span class="text-sm font-semibold">${esc(x.customer||'—')}</span></div></td>
+    <td class="p-3 text-sm">${esc(x.subject||'—')}</td><td class="p-3">${tkPill(TK_PR,x.priority)}</td><td class="p-3">${tkPill(TK_ST,x.status)}</td><td class="p-3 text-sm">${tkDate(x.date)}</td>
+    <td class="p-3"><div class="flex gap-1"><button class="btn2 py-1 px-2" title="View" onclick="event.stopPropagation();supSel('${x._id}')">👁</button><button class="btn py-1 px-2" title="Reply" onclick="event.stopPropagation();supSel('${x._id}')">↩</button></div></td></tr>`).join('')
+    :`<tr><td colspan="9">${empty(T.length?'No tickets match these filters.':'No support tickets yet. Tickets from customers will appear here.')}</td></tr>`;
+  const pageBtns=Array.from({length:Math.min(pages,5)},(_,i)=>i+1).map(n=>`<button onclick="supPage(${n})" class="w-9 h-9 rounded-xl text-sm font-bold ${n===cur?'bg-[#6200EA] text-white':'bg-white border border-[#ddd3f3] text-violet-900'}">${n}</button>`).join('');
+  const bulk=S.sp.chk.length?`<div class="flex flex-wrap items-center gap-2 p-3 bg-violet-50 rounded-xl"><span class="text-sm font-bold">${S.sp.chk.length} selected</span><button class="btn2 py-1" onclick="supBulk('Resolved')">Mark Resolved</button><button class="btn2 py-1" onclick="supBulk('Closed')">Close</button><button class="btn2 py-1" onclick="S.sp.chk=[];render()">Clear</button></div>`:'';
+  const detail=sel?`<div class="p-5 space-y-4">
+    <div class="flex items-center justify-between"><div class="text-xl font-extrabold">#${esc(sel.id||'')}</div>${tkPill(TK_PR,sel.priority)}</div>
+    <div class="flex items-center gap-3 border-b border-violet-100 pb-3"><div class="w-12 h-12 rounded-full bg-violet-100 text-violet-700 font-bold grid place-items-center">${esc((sel.customer||'?').charAt(0).toUpperCase())}</div><div class="flex-1 min-w-0"><div class="font-bold">${esc(sel.customer||'—')}</div><div class="text-xs text-violet-900/70">📞 ${esc(sel.phone||'Not set')}</div><div class="text-xs text-violet-900/70 truncate">✉ ${esc(sel.email||'Not set')}</div></div><div class="text-xs text-right">${tkTime(sel.date)}</div></div>
+    <div><div class="text-xs font-bold text-violet-900/60">Subject</div><div class="font-semibold">${esc(sel.subject||'—')}</div></div>
+    <div><div class="text-xs font-bold text-violet-900/60 mb-1">Message</div><div class="bg-violet-50 rounded-xl p-3 text-sm">${esc(sel.message||'—')}</div></div>
+    <div><div class="text-xs font-bold text-violet-900/60 mb-1">Conversation</div><div class="space-y-2 max-h-64 overflow-auto">${(sel.replies||[]).length?(sel.replies||[]).map(r=>`<div class="flex ${r.by==='admin'?'justify-end':''}"><div class="max-w-[80%] rounded-xl p-3 text-sm ${r.by==='admin'?'bg-[#6200EA] text-white':'bg-violet-50'}">${esc(r.text)}<div class="text-[10px] opacity-70 mt-1">${tkTime(r.at)}</div></div></div>`).join(''):'<div class="text-sm text-violet-900/60">No replies yet.</div>'}</div></div>
+    <div><label class="lbl">Change status</label><select class="inp" onchange="setTicketStatus('${sel._id}',this.value)">${['New','In Progress','Pending','Resolved','Closed','Spam'].map(o=>`<option ${sel.status===o?'selected':''}>${o}</option>`).join('')}</select></div>
+    <div><textarea id="tkReply" class="inp" rows="3" placeholder="Type your reply..."></textarea>
+    <div class="flex items-center justify-between mt-2"><button class="btn2" disabled style="opacity:.6" title="Attachments need storage. Not connected yet">📎 Attach</button><button class="btn" onclick="sendTicketReply('${sel._id}')">➤ Send Reply</button></div></div>
+  </div>`:`<div class="p-5">${empty('Select a ticket to see its details and reply.')}</div>`;
+  return head('🎧 Support &amp; Customer Complaints Management','Handle customer issues, provide support and resolve complaints',
+    `<button class="btn2" onclick="toast('Support settings are not connected yet')">⚙ Support Settings</button><button class="btn2" onclick="toast('Email templates are not connected yet')">✉ Email Templates</button><button class="btn" onclick="openTicketForm()">＋ New Ticket</button>`)+`
+  <div class="grid grid-cols-2 xl:grid-cols-4 gap-4">
+    ${tl('Total Tickets',String(st.total).padStart(2,'0'),st.total?'All tickets':'No tickets yet','#e8f0ff','🎧','#1d4ed8')}
+    ${tl('Resolved',String(st.resolved).padStart(2,'0'),st.resolved?'Resolved and closed':'No resolved tickets yet','#e7f9ee','✅','#15803d')}
+    ${tl('Pending',String(st.pending).padStart(2,'0'),st.pending?'New, in progress or pending':'Nothing pending','#fff3e2','⏰','#c2410c')}
+    ${tl('Customer Rating',st.rated?st.avg.toFixed(1)+'/5':'0.0/5',st.rated?st.rated+' rated tickets':'No ratings yet','#f1e9ff','⭐','#6200EA')}
+  </div>
+  <div class="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-4 items-start">
+    <div class="space-y-4 min-w-0">
+      <div class="flex flex-wrap gap-2">${chip('','All Tickets',st.total)}${chip('New','New',st.c('New'))}${chip('In Progress','In Progress',st.c('In Progress'))}${chip('Resolved','Resolved',st.c('Resolved'))}${chip('Closed','Closed',st.c('Closed'))}${chip('Spam','Spam',st.c('Spam'))}</div>
+      <div class="flex flex-wrap gap-2">
+        <div class="flex-1 min-w-[220px] flex items-center gap-2 bg-white border border-[#ddd3f3] rounded-xl px-3"><span>🔍</span><input class="w-full py-2.5 outline-none text-sm" placeholder="Search tickets by ID, customer name..." value="${esc(sp.q||'')}" onchange="S.sp.q=this.value;S.sp.page=1;render()"></div>
+        <select class="inp w-auto" onchange="S.sp.pr=this.value;S.sp.page=1;render()">${opt(['','High','Medium','Low'],sp.pr).replace('value=""','value=""')}</select>
+        <select class="inp w-auto" onchange="S.sp.stt=this.value;S.sp.page=1;render()">${opt(['','New','In Progress','Pending','Resolved','Closed','Spam'],sp.stt)}</select>
+        <button class="btn2" onclick="render()">⛃ Filter</button>
+        <button class="btn2" onclick="exportTickets()">⬇ Export Tickets</button>
+      </div>
+      <div class="card overflow-hidden">
+        ${bulk?`<div class="p-3">${bulk}</div>`:''}
+        <div class="overflow-x-auto"><table class="w-full text-left min-w-[860px]">
+          <thead class="bg-violet-50 text-sm text-violet-900/70"><tr><th class="p-3 w-10"><input type="checkbox" ${allOn?'checked':''} onclick="supAllToggle()"></th><th class="p-3">#</th><th class="p-3">Ticket ID</th><th class="p-3">Customer</th><th class="p-3">Subject</th><th class="p-3">Priority</th><th class="p-3">Status</th><th class="p-3">Date</th><th class="p-3">Action</th></tr></thead>
+          <tbody>${body}</tbody></table></div>
+        <div class="flex flex-wrap items-center justify-between gap-2 p-3 text-sm">
+          <span>Showing ${L.length?(cur-1)*per+1:0} to ${Math.min(cur*per,L.length)} of ${L.length} tickets</span>
+          <div class="flex gap-1"><button class="w-9 h-9 rounded-xl border border-[#ddd3f3] bg-white" onclick="supPage(${Math.max(1,cur-1)})">‹</button>${pageBtns}<button class="w-9 h-9 rounded-xl border border-[#ddd3f3] bg-white" onclick="supPage(${Math.min(pages,cur+1)})">›</button></div>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="card p-5"><div class="font-extrabold mb-3">Customer Support Performance</div>
+          <div class="grid grid-cols-2 gap-3 text-sm">
+            <div><div class="text-2xl font-extrabold">${st.rated?st.sat+'%':'00%'}</div><div class="text-violet-900/70">Satisfaction Rate</div></div>
+            <div><div class="text-2xl font-extrabold">${st.art?st.art.toFixed(1)+'h':'00h'}</div><div class="text-violet-900/70">Avg Response Time</div></div>
+            <div><div class="text-2xl font-extrabold">${st.resRate}%</div><div class="text-violet-900/70">Resolution Rate</div></div>
+            <div><div class="text-2xl font-extrabold">${st.rated?st.avg.toFixed(1):'0.0'}/5</div><div class="text-violet-900/70">Rating</div></div>
+          </div></div>
+        <div class="card p-5"><div class="font-extrabold mb-3">Quick Actions</div>
+          <div class="grid grid-cols-2 gap-2">
+            <button class="btn2" onclick="go('support','all')">👁 View All Tickets</button>
+            <button class="btn2" onclick="exportTickets()">⬇ Export Report</button>
+            <button class="btn2" onclick="toast('Broadcast needs an email or SMS provider. Not connected yet')">📢 Send Broadcast</button>
+            <button class="btn2" onclick="toast('FAQ manager is not connected yet')">📘 Manage FAQs</button>
+          </div></div>
+      </div>
+    </div>
+    <div class="card overflow-hidden xl:sticky xl:top-4">
+      <div class="px-5 py-3 font-extrabold text-white flex justify-between items-center" style="background:linear-gradient(90deg,#7c3aed,#6200EA)"><span>Ticket Details</span>${sel?`<button class="text-white text-lg leading-none" onclick="S.sp.sel='';render()" aria-label="Close">✕</button>`:''}</div>
+      ${detail}
+    </div>
+  </div>`;
+};
+
+function rgFmt(inr,r){if(!(Number(r.rate)>0))return 'Set rate';const v=Number(inr)*Number(r.rate);try{return new Intl.NumberFormat(r.locale||'en-US',{style:'currency',currency:String(r.currency||'USD').toUpperCase()}).format(v)}catch(e){return String(r.currency||'')+' '+v.toFixed(2)}}
+const RG_SAMPLE=999;
+function regionForm(i){const r=(i!=null&&S.data.regions[i])||{};
+  openModal(`<h3 class="text-xl font-extrabold mb-4">${i!=null?'Edit Region':'Add Region'}</h3><form onsubmit="saveRegion(event,${i==null?'null':i})" class="grid gap-3">
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><div><label class="lbl">Country *</label><input id="rgCountry" class="inp" value="${esc(r.country||'')}" required></div><div><label class="lbl">Country code</label><input id="rgCode" class="inp uppercase" maxlength="2" value="${esc(r.code||'')}" placeholder="US"></div></div>
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><div><label class="lbl">Language *</label><input id="rgLang" class="inp" value="${esc(r.language||'')}" required placeholder="English"></div><div><label class="lbl">Number format (locale)</label><input id="rgLocale" class="inp" value="${esc(r.locale||'')}" placeholder="en-US"></div></div>
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><div><label class="lbl">Currency code *</label><input id="rgCur" class="inp uppercase" maxlength="3" value="${esc(r.currency||'')}" placeholder="USD" required></div><div><label class="lbl">Rate: 1 INR = ? (0 = not set)</label><input id="rgRate" type="number" min="0" step="any" class="inp" value="${r.rate!=null?esc(String(r.rate)):''}"></div></div>
+  <label class="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" id="rgOn" ${r.enabled!==false?'checked':''}> Show this region on the store</label>
+  <div class="flex justify-end gap-2"><button type="button" class="btn2" onclick="closeModal()">Cancel</button><button class="btn" type="submit">Save</button></div></form>`)}
+async function saveRegion(e,i){e.preventDefault();
+  const rec={country:$('#rgCountry').value.trim(),code:$('#rgCode').value.trim().toUpperCase(),language:$('#rgLang').value.trim(),locale:$('#rgLocale').value.trim()||'en-US',currency:$('#rgCur').value.trim().toUpperCase(),rate:Number($('#rgRate').value)||0,enabled:$('#rgOn').checked};
+  if(!/^[A-Z]{3}$/.test(rec.currency))return toast('Currency code must be 3 letters, like USD');
+  const list=(S.data.regions||[]).slice();if(i==null)list.push(rec);else list[i]=rec;
+  try{await saveSetting('regions',list);S.data.regions=list;logActivity('Region '+rec.country+' saved');closeModal();render();toast('Region saved')}catch(err){toast('Save failed: '+(err.message||err.code))}}
+async function toggleRegion(i,on){const list=(S.data.regions||[]).slice();if(!list[i])return;list[i]={...list[i],enabled:!!on};try{await saveSetting('regions',list);S.data.regions=list;render()}catch(err){toast('Update failed: '+(err.message||err.code))}}
+async function delRegion(i){const list=(S.data.regions||[]).slice();const r=list[i];if(!r||!confirm('Delete '+r.country+'?'))return;list.splice(i,1);try{await saveSetting('regions',list);S.data.regions=list;logActivity('Region '+r.country+' deleted');render();toast('Region deleted')}catch(err){toast('Delete failed: '+(err.message||err.code))}}
+PAGES.regions=()=>{
+  const L=S.data.regions||[];const on=L.filter(r=>r.enabled!==false);
+  const tl=(label,val,sub,bg,ic,fg)=>`<div class="tile" style="background:${bg}"><div class="w-14 h-14 rounded-2xl grid place-items-center text-2xl bg-white/70">${ic}</div><div class="flex-1 min-w-0"><div class="text-sm text-violet-900/70">${label}</div><div class="text-2xl font-extrabold" style="color:${fg}">${val}</div><div class="text-xs font-bold text-violet-900/50">${sub}</div></div></div>`;
+  const rows=L.length?L.map((r,i)=>`<tr class="border-t border-violet-50 align-top">
+    <td class="p-3"><div class="font-bold">${esc(r.country||'—')}</div><div class="text-xs text-violet-900/60">${esc(r.code||'')}</div></td>
+    <td class="p-3 text-sm">${esc(r.language||'—')}</td>
+    <td class="p-3 text-sm font-bold">${esc(r.currency||'—')}</td>
+    <td class="p-3 text-sm">${Number(r.rate)>0?'1 INR = '+esc(String(r.rate))+' '+esc(r.currency||''):'Not set'}</td>
+    <td class="p-3 text-sm font-semibold">${rgFmt(RG_SAMPLE,r)}</td>
+    <td class="p-3"><label class="switch"><input type="checkbox" ${r.enabled!==false?'checked':''} onchange="toggleRegion(${i},this.checked)"><span class="slider"></span></label></td>
+    <td class="p-3"><div class="flex gap-1"><button class="btn py-1 px-2" onclick="regionForm(${i})">✎ Edit</button><button class="btnx" onclick="delRegion(${i})">🗑</button></div></td></tr>`).join('')
+    :`<tr><td colspan="7">${empty('No countries added yet. Click "Add Region" to add a country, language and currency.')}</td></tr>`;
+  return head('Regions &amp; Currency','Set which countries, languages and currencies your store shows',
+    `<button class="btn" onclick="regionForm()">＋ Add Region</button>`)+`
+  <div class="grid grid-cols-2 xl:grid-cols-4 gap-4">
+    ${tl('Countries Shown',String(on.length).padStart(2,'0'),L.length?'Enabled on store':'None added yet','#e8f0ff','🌍','#1d4ed8')}
+    ${tl('Languages',String(new Set(on.map(r=>r.language)).size).padStart(2,'0'),'Enabled','#e7f9ee','🗣️','#15803d')}
+    ${tl('Currencies',String(new Set(on.map(r=>(r.currency||'').toUpperCase())).size).padStart(2,'0'),'Enabled','#fff3e2','💱','#c2410c')}
+    ${tl('Base Currency','INR','Prices are entered in rupees','#f1e9ff','₹','#6200EA')}
+  </div>
+  <div class="card overflow-hidden">
+    <div class="px-5 py-3 flex flex-wrap gap-2 justify-between items-center border-b border-violet-100"><div class="font-extrabold">Country, Language &amp; Currency</div><div class="text-xs text-violet-900/60">Preview uses a sample price of ₹${RG_SAMPLE}</div></div>
+    <div class="overflow-x-auto"><table class="w-full text-left min-w-[860px]"><thead class="bg-violet-50 text-sm text-violet-900/70"><tr><th class="p-3">Country</th><th class="p-3">Language</th><th class="p-3">Currency</th><th class="p-3">Rate</th><th class="p-3">Preview</th><th class="p-3">Show</th><th class="p-3">Action</th></tr></thead><tbody>${rows}</tbody></table></div>
+  </div>
+  <div class="card p-5 text-sm text-violet-900/70">Your store prices stay in ₹ (INR). The rate and currency above are used to show converted amounts for each country. The website reads this list once its backend is connected.</div>`;
+};
+
+/* ============ PRODUCT FORM, ACTIONS, STOREFRONT PREVIEW ============ */
+async function prodImg(file){const bmp=await createImageBitmap(file);let max=1600,q=.9,src='';
+  for(let i=0;i<5;i++){const k=Math.min(1,max/Math.max(bmp.width,bmp.height));const c=document.createElement('canvas');c.width=Math.round(bmp.width*k);c.height=Math.round(bmp.height*k);c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);src=c.toDataURL('image/jpeg',q);if(src.length<900000)break;max=Math.round(max*.85);q=Math.max(.6,q-.05)}
+  return src}
+function revParse(t){return String(t||'').split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{const [name,rt,...rest]=l.split('|').map(x=>x.trim());const r=Math.min(5,Math.max(1,Number(rt)||0));return {name:name||'Customer',rating:r,text:rest.join(' | ')}}).filter(r=>r.rating>0)}
+function revText(list){return (list||[]).map(r=>`${r.name} | ${r.rating} | ${r.text||''}`).join('\n')}
+function productForm(grp,id){const x=(id&&S.data.products.find(p=>p._id===id))||{};const g=x.grp||grp||'women';
+  S.pf={imgs:(Array.isArray(x.images)&&x.images.length?x.images:(x.img?[{url:x.img,colour:'',path:''}]:[])).map(i=>({...i})),add:[],del:[]};
+  const cats=[...new Set(S.data.products.map(p=>p.cat).filter(Boolean))];
+  const fld=(lab,id2,val,type,extra='')=>`<div><label class="lbl">${lab}</label><input id="${id2}" type="${type||'text'}" class="inp" value="${esc(val==null?'':String(val))}" ${extra}></div>`;
+  openModal(`<h3 class="text-xl font-extrabold mb-4">${id?'Edit Product':'Add Product'}</h3><form onsubmit="saveProduct(event,'${id||''}')" class="grid gap-3 max-h-[75vh] overflow-y-auto pr-1">
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${fld('Product name *','pfName',x.name,'text','required')}${fld('SKU','pfSku',x.sku)}</div>
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><div><label class="lbl">Section *</label><select id="pfGrp" class="inp">${['women','men','kids','kitchen'].map(o=>`<option value="${o}" ${g===o?'selected':''}>${o}</option>`).join('')}</select></div><div><label class="lbl">Category</label><input id="pfCat" class="inp" list="pfCats" value="${esc(x.cat||'')}"><datalist id="pfCats">${cats.map(c=>`<option value="${esc(c)}"></option>`).join('')}</datalist></div></div>
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">${fld('Price (₹) *','pfPrice',x.price,'number','required min="0" step="any"')}${fld('MRP / old price (₹)','pfOld',x.old,'number','min="0" step="any"')}${fld('Stock','pfStock',x.stock,'number','min="0"')}</div>
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><div><label class="lbl">Colours (comma separated, e.g. Red, White, Maroon)</label><input id="pfColor" class="inp" value="${esc(Array.isArray(x.color)?x.color.join(', '):(x.color||''))}" oninput="pfColRefresh()"></div>${fld('Sizes (comma separated, e.g. S, M, L, XL, XXL)','pfSizes',x.sizes)}</div>
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${fld('Fabric / material','pfFabric',x.fabric)}${fld('Length','pfLength',x.length)}${fld('Pattern / style','pfPattern',x.pattern)}${fld('Occasion','pfOcc',x.occasion)}${fld('Care instructions','pfCare',x.care)}${fld('Country of origin','pfOrigin',x.origin)}</div>
+  <div class="card p-4"><label class="lbl">Product photos (3:4, 1200 × 1600 px or larger, up to 12)</label>
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><div><label class="text-xs font-semibold">Photos are for this colour</label><select id="pfColSel" class="inp"></select></div><div><label class="text-xs font-semibold">Choose photos (front, back, side, model)</label><input id="pfFile" type="file" accept="image/*" multiple class="inp" onchange="pfAddFiles(this)"></div></div>
+  <div class="text-xs text-violet-900/60 mt-2">Each colour can have its own model photos. The first photo is the main cover. Photos are uploaded to Firebase Storage when you save.</div>
+  <div id="pfPrev" class="grid grid-cols-3 sm:grid-cols-4 gap-2 mt-3"></div></div>
+  <div><label class="lbl">Description</label><textarea id="pfDesc" class="inp" rows="3">${esc(x.desc||'')}</textarea></div>
+  <div><label class="lbl">Customer reviews (one per line: Name | rating 1 to 5 | review text)</label><textarea id="pfRev" class="inp" rows="4" placeholder="Priya | 5 | Lovely fabric, fits well">${esc(revText(x.reviewList))}</textarea><div class="text-xs text-rose-700 mt-1">Enter only real reviews from your customers. Rating and review count are calculated from these lines.</div></div>
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><div><label class="lbl">Status</label><select id="pfStatus" class="inp"><option ${(x.status||'Active')==='Active'?'selected':''}>Active</option><option ${x.status==='Inactive'?'selected':''}>Inactive</option></select></div>${fld('Rating (if no reviews above)','pfRating',x.rating,'number','min="0" max="5" step="0.1"')}</div>
+  <div class="flex justify-end gap-2 pt-2"><button type="button" class="btn2" onclick="closeModal()">Cancel</button><button class="btn" type="submit">Save Product</button></div></form>`);pfColRefresh();pfPrev()}
+function pfColours(){return String($('#pfColor')?$('#pfColor').value:'').split(',').map(x=>x.trim()).filter(Boolean)}
+function pfColRefresh(){const sel=$('#pfColSel');if(!sel)return;const cur=sel.value;sel.innerHTML=['All colours'].concat(pfColours()).map(c=>`<option value="${esc(c==='All colours'?'':c)}" ${cur===c||(c==='All colours'&&!cur)?'selected':''}>${esc(c)}</option>`).join('')}
+function pfAddFiles(inp){[...inp.files].forEach(f=>S.pf.add.push({file:f,colour:($('#pfColSel')||{}).value||'',url:URL.createObjectURL(f)}));inp.value='';pfPrev()}
+function pfDel(kind,i){if(kind==='old'){const x=S.pf.imgs[i];if(x&&x.path)S.pf.del.push(x.path);S.pf.imgs.splice(i,1)}else S.pf.add.splice(i,1);pfPrev()}
+function pfPrev(){const el=$('#pfPrev');if(!el)return;pfColRefresh();
+  const old=S.pf.imgs.map((x,i)=>`<div class="relative rounded-xl overflow-hidden border border-violet-100 bg-violet-50 aspect-[3/4]"><img src="${esc(x.url)}" class="w-full h-full object-cover" alt=""><span class="absolute bottom-1 left-1 text-[10px] bg-white/90 px-1.5 rounded">${i===0?'Cover · ':''}${esc(x.colour||'All colours')}</span><button type="button" class="absolute top-1 right-1 bg-rose-600 text-white rounded-full w-6 h-6 text-xs" onclick="pfDel('old',${i})" aria-label="Remove">✕</button></div>`);
+  const add=S.pf.add.map((x,i)=>`<div class="relative rounded-xl overflow-hidden border-2 border-dashed border-violet-300 bg-violet-50 aspect-[3/4]"><img src="${x.url}" class="w-full h-full object-cover" alt=""><span class="absolute bottom-1 left-1 text-[10px] bg-amber-100 px-1.5 rounded">New · ${esc(x.colour||'All colours')}</span><button type="button" class="absolute top-1 right-1 bg-rose-600 text-white rounded-full w-6 h-6 text-xs" onclick="pfDel('new',${i})" aria-label="Remove">✕</button></div>`);
+  el.innerHTML=(old.concat(add).join(''))||'<div class="col-span-full text-sm text-violet-900/60">No photos yet. Choose photos above.</div>'}
+async function uploadProdImage(file,key,colour){const bmp=await createImageBitmap(file);const max=1600;const k=Math.min(1,max/Math.max(bmp.width,bmp.height));
+  const c=document.createElement('canvas');c.width=Math.round(bmp.width*k);c.height=Math.round(bmp.height*k);c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);
+  const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',.92));const folder=String(colour||'all').replace(/[^a-z0-9]+/gi,'-').toLowerCase();
+  const path=`products/${key}/${folder}/${Date.now()}-${Math.random().toString(36).slice(2,7)}.jpg`;const ref=firebase.storage().ref(path);
+  await ref.put(blob,{contentType:'image/jpeg'});return {url:await ref.getDownloadURL(),path,colour:colour||''}}
+async function saveProduct(e,id){e.preventDefault();
+  const price=Number($('#pfPrice').value);if(!(price>=0))return toast('Enter a valid price');
+  const list=revParse($('#pfRev').value);
+  const avg=list.length?Math.round(list.reduce((t,r)=>t+r.rating,0)*10/list.length)/10:0;
+  const rating=list.length?avg:Math.min(5,Math.max(0,Number($('#pfRating').value)||0));
+  const v=id=>$(id).value.trim();
+  const rec={name:v('#pfName'),sku:v('#pfSku'),grp:$('#pfGrp').value,cat:v('#pfCat'),price,old:Number($('#pfOld').value)||0,stock:Number($('#pfStock').value)||0,
+    color:v('#pfColor'),sizes:v('#pfSizes'),fabric:v('#pfFabric'),length:v('#pfLength'),pattern:v('#pfPattern'),occasion:v('#pfOcc'),care:v('#pfCare'),origin:v('#pfOrigin'),
+    rating,reviews:list.length,reviewList:list,desc:v('#pfDesc'),status:$('#pfStatus').value};
+  try{
+    const key=id||db.collection('products').doc().id;
+    const imgs=S.pf.imgs.slice();
+    for(const a of S.pf.add){imgs.push(await uploadProdImage(a.file,key,a.colour))}
+    for(const pth of S.pf.del){try{await firebase.storage().ref(pth).delete()}catch(er){}}
+    rec.images=imgs.map(i=>({url:i.url,path:i.path||'',colour:i.colour||''}));rec.img=imgs.length?imgs[0].url:'';
+    if(id){await db.collection('products').doc(id).update(rec);const x=S.data.products.find(p=>p._id===id);if(x)Object.assign(x,rec);logActivity('Product '+rec.name+' updated')}
+    else{rec.createdAt=new Date().toISOString();await db.collection('products').doc(key).set(rec);S.data.products.unshift({_id:key,...rec});logActivity('Product '+rec.name+' added')}
+    closeModal();render();toast('Product saved')
+  }catch(err){toast('Save failed: '+(err.message||err.code))}}
+function editProduct(id){productForm(null,id)}
+async function delProduct(id){const x=S.data.products.find(p=>p._id===id);if(!confirm('Delete '+((x&&x.name)||'this product')+'?'))return;
+  try{await db.collection('products').doc(id).delete();S.data.products=S.data.products.filter(p=>p._id!==id);logActivity('Product '+((x&&x.name)||id)+' deleted');render();toast('Product deleted')}catch(err){toast('Delete failed: '+(err.message||err.code))}}
+async function restock(id){const x=S.data.products.find(p=>p._id===id);if(!x)return;const n=(Number(x.stock)||0)+50;
+  try{await db.collection('products').doc(id).update({stock:n});x.stock=n;logActivity('Restocked '+x.name+' by 50');render();toast('Stock increased by 50')}catch(err){toast('Update failed: '+(err.message||err.code))}}
+function openOrder(id){S.of=S.of||{};S.of.sel=id;go('orders')}
+function configProvider(key,name){const x=(S.data[key]||[]).find(p=>p.name===name)||{};
+  openModal(`<h3 class="text-xl font-extrabold mb-4">Configure ${esc(name)}</h3><form onsubmit="saveProvider(event,'${key}','${esc(name)}')" class="grid gap-3">
+  <div><label class="lbl">${key==='gateways'?'Fee':'Charge'} (shown in table)</label><input id="pvFee" class="inp" value="${esc((key==='gateways'?x.fee:x.charge)||'')}" placeholder="${key==='gateways'?'e.g. 2% + GST':'e.g. ₹60'}"></div>
+  <div><label class="lbl">API key (stored in your Firestore, keep private)</label><input id="pvKey" class="inp" type="password" value="${esc(x.key||'')}"></div>
+  <label class="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" id="pvOn" ${x.on?'checked':''}> Enabled</label>
+  <div class="flex justify-end gap-2"><button type="button" class="btn2" onclick="closeModal()">Cancel</button><button class="btn" type="submit">Save</button></div></form>`)}
+async function saveProvider(e,key,name){e.preventDefault();const L=(S.data[key]||[]).slice();const i=L.findIndex(p=>p.name===name);
+  const fee=$('#pvFee').value.trim();const rec={name,on:$('#pvOn').checked,key:$('#pvKey').value.trim(),updated:new Date().toLocaleDateString('en-IN')};
+  if(key==='gateways')rec.fee=fee;else rec.charge=fee;
+  if(i>=0)L[i]={...L[i],...rec};else L.push(rec);
+  try{await saveSetting(key,L);S.data[key]=L;logActivity(name+' settings saved');closeModal();render();toast('Saved')}catch(err){toast('Save failed: '+(err.message||err.code))}}
+function storePreview(grp){const L=S.data.products.filter(x=>x.grp===grp&&x.status!=='Inactive');
+  const card=x=>{const pct=Number(x.old)>Number(x.price)?Math.round((Number(x.old)-Number(x.price))*100/Number(x.old)):0;const r=Number(x.rating)||0;
+    return `<div class="bg-white rounded-2xl overflow-hidden border border-violet-100 cursor-pointer" onclick="openProduct('${x._id}')"><div class="relative bg-violet-50 aspect-[3/4]">${x.img?`<img src="${esc(x.img)}" class="w-full h-full object-cover" alt="" loading="lazy">`:`<div class="w-full h-full grid place-items-center text-violet-300 text-sm">No photo</div>`}${pct?`<span class="absolute top-2 left-2 bg-emerald-600 text-white text-xs font-bold px-2 py-1 rounded-md">${pct}% Off</span>`:''}</div>
+    <div class="p-3"><div class="font-semibold text-sm leading-snug">${esc(x.name||'')}</div><div class="flex items-baseline gap-2 mt-1 flex-wrap"><span class="font-extrabold">${money(x.price)}</span>${Number(x.old)>0?`<span class="text-xs line-through text-violet-900/50">${money(x.old)}</span>`:''}</div>
+    <div class="mt-1 text-xs font-bold text-amber-600">★ ${r?r.toFixed(1):'0.0'}${Number(x.reviews)?` <span class="text-violet-900/50">(${Number(x.reviews)} reviews)</span>`:''}</div></div></div>`};
+  return `<div class="card p-5"><div class="flex flex-wrap justify-between items-center gap-2 mb-3"><div class="font-extrabold">Storefront preview (how customers see it on phones)</div><div class="text-xs text-violet-900/60">2 per row on phones, rating and discount shown</div></div>${L.length?`<div class="grid grid-cols-2 lg:grid-cols-4 gap-3">${L.map(card).join('')}</div>`:empty('No products in this section yet. Add a product to see the preview.')}</div>`}
+S.nf=S.nf||'all';
+const NTYPE=t=>{t=String(t||'').toLowerCase();if(/order/.test(t))return['Order','bg-violet-50 text-violet-700','🛒'];if(/return|refund/.test(t))return['Return','bg-orange-50 text-orange-700','🔄'];if(/stock|low/.test(t))return['Stock Alert','bg-rose-50 text-rose-700','📦'];if(/customer|user|regist/.test(t))return['User','bg-emerald-50 text-emerald-700','👤'];if(/offer|promo|coupon/.test(t))return['Promotion','bg-fuchsia-50 text-fuchsia-700','％'];return['Activity','bg-slate-100 text-slate-700','🔔']};
+PAGES.notifications=()=>{
+  const A=S.data.activity.slice().sort((x,y)=>String(y.at).localeCompare(String(x.at)));
+  const unread=A.filter(x=>!x.read).length, read=A.length-unread;
+  const today=new Date().toISOString().slice(0,10);
+  const todayN=A.filter(x=>String(x.at||'').slice(0,10)===today).length;
+  const ql=(S.q||'').toLowerCase();
+  const list=A.filter(x=>(S.nf==='all'||(S.nf==='unread'?!x.read:!!x.read))&&(!ql||String(x.text||'').toLowerCase().includes(ql)));
+  const tiles=(ic,n,l,bg)=>`<div class="rounded-2xl p-4 text-center" style="background:${bg}"><div class="text-2xl">${ic}</div><div class="text-xl font-extrabold mt-1">${n}</div><div class="text-xs font-bold text-violet-900/70">${l}</div></div>`;
+  const chip=(k,l,n)=>`<button class="${S.nf===k?'btn':'btn2'}" onclick="S.nf='${k}';render()">${l} (${n})</button>`;
+  const nrows=list.map(x=>{const [lab,cls,ic]=NTYPE(x.text);return `<div class="flex items-center gap-3 py-3 border-b border-violet-50 last:border-0 ${x.read?'':'bg-violet-50/40'} px-2 rounded-lg"><input type="checkbox" class="w-4 h-4 accent-violet-700"><div class="w-10 h-10 rounded-xl bg-white border border-violet-100 grid place-items-center text-lg">${ic}</div><div class="flex-1 min-w-0 cursor-pointer" onclick="markRead('${x._id}')"><div class="font-bold text-sm truncate">${esc(x.text||'')}</div><div class="text-xs text-violet-900/60">${esc(x.at||'')}</div></div><span class="pill ${cls}">${lab}</span><span class="text-xs font-bold ${x.read?'text-blue-600':'text-rose-600'}">${x.read?'● Read':'● Unread'}</span><button class="btnx" onclick="delActivity('${x._id}')">🗑</button></div>`}).join('');
+  const arows=A.slice(0,50).map((x,i)=>`<tr class="hover:bg-violet-50/40"><td>${i+1}</td><td><div class="flex items-center gap-2"><div class="w-8 h-8 rounded-full bg-violet-100 text-violet-700 font-bold grid place-items-center text-xs">${esc(String(x.by||'A')[0]).toUpperCase()}</div><span>${esc(x.by||'Admin')}</span></div></td><td><span class="pill bg-violet-50 text-violet-700">${esc(String(x.text||'').split(':')[0]||'Activity')}</span></td><td>${esc(x.text||'')}</td><td>${esc(x.at||'')}</td><td class="text-xs text-violet-900/60">—</td><td><span class="pill bg-emerald-50 text-emerald-700">Success</span></td></tr>`).join('');
+  return head('Notifications &amp; Admin Activity Log','Manage notifications and track admin activities','<button class="btn2" onclick="toast(\'Sending notifications needs an email or push service. Not connected yet.\')">✈ Send Notification</button><button class="btn2" onclick="go(\'settings\')">⚙ Notification Settings</button><button class="btn" onclick="exportActivity()">⬇ Export Log</button>')+`
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <div class="card p-5 xl:col-span-2"><div class="flex flex-wrap justify-between items-center gap-2 mb-3"><div class="flex items-center gap-3"><h3 class="font-extrabold">🔔 Notifications</h3><span class="pill bg-violet-600 text-white">All (${A.length})</span></div><div class="flex flex-wrap gap-2">${chip('all','All',A.length)}${chip('unread','Unread',unread)}${chip('read','Read',read)}<button class="btn2" onclick="markAllRead()">✔ Mark All Read</button></div></div>
+      <input class="inp mb-3" placeholder="Search notifications..." value="${esc(S.q||'')}" oninput="S.q=this.value;render()">
+      ${A.length?(nrows||empty('No notifications match this filter.')):empty('No notifications yet. Store activity appears here.')}</div>
+    <div class="card p-5"><div class="font-extrabold mb-3">📊 Notification Stats</div><div class="grid grid-cols-2 gap-2">${tiles('✉',A.length,'Total','#dbeafe')}${tiles('✔',read,'Read','#dcfce7')}${tiles('🔔',unread,'Unread','#fef3c7')}${tiles('➤',todayN,'Today','#ede9fe')}</div>
+      <div class="mt-4 text-sm"><div class="flex justify-between mb-1"><span>Read</span><span>${A.length?Math.round(read*100/A.length):0}%</span></div><div class="h-2 bg-violet-100 rounded-full overflow-hidden"><div class="h-2 bg-emerald-500" style="width:${A.length?Math.round(read*100/A.length):0}%"></div></div></div></div>
+  </div>
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <div class="card overflow-hidden xl:col-span-2"><div class="flex flex-wrap justify-between items-center gap-2 p-4"><h3 class="font-extrabold">🕘 Admin Activity Log</h3><input class="inp max-w-xs" placeholder="Search activities..." value="${esc(S.q||'')}" oninput="S.q=this.value;render()"></div>
+      ${A.length?`<div class="scroll-x"><table class="t"><thead><tr><th>#</th><th>Admin</th><th>Action</th><th>Details</th><th>Date &amp; Time</th><th>IP Address</th><th>Status</th></tr></thead><tbody>${arows}</tbody></table></div><div class="p-4 text-sm text-violet-900/70">Showing ${Math.min(50,A.length)} of ${A.length} activities</div>`:empty('No admin activity yet.')}</div>
+    <div class="space-y-4"><div class="card p-5"><div class="font-extrabold mb-3">Quick Actions</div><div class="grid gap-2"><button class="btn2 text-left" onclick="toast(\'Sending notifications needs a service. Not connected yet.\')">✈ Send Notification</button><button class="btn2 text-left" onclick="markAllRead()">✔ Mark All Read</button><button class="btn2 text-left" onclick="clearRead()">🗑 Clear Read Notifications</button><button class="btn2 text-left" onclick="exportActivity()">⬇ Export Log</button></div></div>
+      <div class="card p-5"><div class="font-extrabold mb-3">⚠ Recent Alerts</div>${A.slice(0,3).map(x=>`<div class="py-2 border-b border-violet-50 last:border-0 text-sm"><div class="font-semibold">${esc(x.text||'')}</div><div class="text-xs text-violet-900/60">${esc(x.at||'')}</div></div>`).join('')||'<div class="text-sm text-violet-900/60">No alerts</div>'}</div></div>
+  </div>`;
+};
+async function markRead(id){try{await db.collection('admin_activity').doc(id).update({read:true});const x=S.data.activity.find(a=>a._id===id);if(x)x.read=true;render()}catch(err){toast('Update failed')}}
+async function markAllRead(){try{const b=db.batch?db.batch():null;const todo=S.data.activity.filter(a=>!a.read);for(const x of todo){await db.collection('admin_activity').doc(x._id).update({read:true});x.read=true}render();toast('All marked read')}catch(err){toast('Update failed')}}
+async function delActivity(id){if(!confirm('Delete this notification?'))return;try{await db.collection('admin_activity').doc(id).delete();S.data.activity=S.data.activity.filter(a=>a._id!==id);render()}catch(err){toast('Delete failed')}}
+async function clearRead(){const todo=S.data.activity.filter(a=>a.read);if(!todo.length)return toast('No read notifications');if(!confirm('Delete '+todo.length+' read notifications?'))return;for(const x of todo){try{await db.collection('admin_activity').doc(x._id).delete()}catch(e){}}S.data.activity=S.data.activity.filter(a=>!a.read);render();toast('Cleared')}
+function exportActivity(){const A=S.data.activity;if(!A.length)return toast('No activity to export');const lines=['By,Action,Date',...A.map(x=>[x.by,x.text,x.at].map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(','))];const b=new Blob([lines.join('\n')],{type:'text/csv'});const u=URL.createObjectURL(b);const l=document.createElement('a');l.href=u;l.download='admin_activity.csv';document.body.appendChild(l);l.click();l.remove();URL.revokeObjectURL(u)}
+window._stab=window._stab||'general';
+const SITE_FLAGS=[['featShop','Enable Online Shopping',true],['featOffers','Enable Offers & Discounts',true],['featWish','Enable Wishlist',true],['featNotif','Enable Notifications',true],['featChat','Enable Live Chat Support',false],['featGuest','Enable Guest Checkout',true]];
+const NOTIF_FLAGS=[['nEmail','Email Notifications',true],['nSms','SMS Notifications',true],['nOrder','Order Alerts',true],['nMarketing','Marketing Emails',false]];
+const SOCIAL=[['socFb','Facebook','https://facebook.com/'],['socYt','YouTube','https://youtube.com/@'],['socIg','Instagram','https://instagram.com/'],['socTw','Twitter / X','https://twitter.com/'],['socLi','LinkedIn','https://linkedin.com/company/']];
+const SET_TABS=[['general','General Settings'],['appearance','Appearance'],['seo','SEO Settings'],['social','Social Media'],['notify','Notification Settings'],['backup','Backup & Restore']];
+function sv(k,def){const v=(S.data.site||{})[k];return v===undefined?def:v}
+function sfield(k,label,def,type='text',req=false){return `<div><label class="lbl">${label}${req?' <span class="text-rose-600">*</span>':''}</label><input class="inp" data-k="${k}" type="${type}" value="${esc(sv(k,def)??'')}"></div>`}
+function stoggle(k,label,def){return `<div class="flex items-center justify-between py-2 border-b border-violet-50 last:border-0"><span class="font-semibold text-sm">${label}</span><label class="switch"><input type="checkbox" data-t="${k}" ${sv(k,def)?'checked':''}><span class="slider"></span></label></div>`}
+PAGES.settings=()=>{
+  const t=window._stab;
+  const tabs=`<div class="card p-2 flex flex-wrap gap-2">${SET_TABS.map(([k,l])=>`<button class="${t===k?'btn':'btn2'}" onclick="window._stab='${k}';render()">${l}</button>`).join('')}</div>`;
+  const general=`<div class="grid grid-cols-1 xl:grid-cols-3 gap-4"><div class="card p-5 xl:col-span-2"><div class="font-extrabold mb-3">Basic Information</div><div class="grid md:grid-cols-2 gap-3">${sfield('storeName','Website Name','ZAVRA Online Store','text',true)}${sfield('tagline','Tagline','Shop Smart, Live Better','text',true)}${sfield('supportEmail','Website Email','support@zavra.com','email',true)}${sfield('whatsapp','Contact Number','','text',true)}<div class="md:col-span-2">${sfield('address','Address','','text',true)}</div></div></div>
+    <div class="card p-5"><div class="font-extrabold mb-3">Website Features</div>${SITE_FLAGS.map(([k,l,d])=>stoggle(k,l,d)).join('')}</div></div>`;
+  const appearance=`<div class="card p-5 grid md:grid-cols-2 gap-3">${sfield('primaryColor','Primary colour (hex)','#6200EA')}${sfield('currency','Currency code','INR')}${sfield('taxRate','GST / Tax rate (%)','','number')}${sfield('codMin','COD minimum order (₹)','','number')}</div>`;
+  const seo=`<div class="card p-5 grid md:grid-cols-2 gap-3">${sfield('seoTitle','Meta Title','')}${sfield('seoKeywords','Keywords','')}<div class="md:col-span-2"><label class="lbl">Meta Description</label><textarea class="inp" data-k="seoDesc" rows="3">${esc(sv('seoDesc',''))}</textarea></div></div>`;
+  const social=`<div class="card p-5 grid md:grid-cols-2 gap-3">${SOCIAL.map(([k,l,pre])=>`<div><label class="lbl">${l}</label><input class="inp" data-k="${k}" placeholder="${pre}" value="${esc(sv(k,''))}"></div>`).join('')}</div>`;
+  const notify=`<div class="grid grid-cols-1 xl:grid-cols-2 gap-4"><div class="card p-5">${NOTIF_FLAGS.map(([k,l,d])=>stoggle(k,l,d)).join('')}</div><div class="card p-5">${sfield('notifEmail','Notification Email','','email')}<div class="mt-4 p-4 rounded-xl bg-amber-50 text-sm"><b>Maintenance mode</b> <label class="switch float-right"><input type="checkbox" data-t="maintenance" ${sv('maintenance',false)?'checked':''}><span class="slider"></span></label><div class="text-amber-800 mt-2">When on, the website shows a maintenance page to visitors.</div></div></div></div>`;
+  const backup=`<div class="grid grid-cols-1 xl:grid-cols-2 gap-4"><div class="card p-5"><div class="font-extrabold mb-2">Backup &amp; Restore</div><p class="text-sm text-violet-900/70">Backups are not connected yet.</p><div class="flex gap-2 mt-3"><button class="btn" disabled style="opacity:.6">Create Backup</button><button class="btn2" disabled style="opacity:.6">Restore Backup</button></div></div>
+    <div class="card p-5"><div class="font-extrabold mb-3">Site Statistics</div><div class="grid grid-cols-3 gap-2 text-center"><div><div class="text-2xl font-extrabold">${S.data.customers.length||''}</div><div class="text-xs text-violet-900/60">Customers</div></div><div><div class="text-2xl font-extrabold">${S.data.orders.length||''}</div><div class="text-xs text-violet-900/60">Orders</div></div><div><div class="text-2xl font-extrabold">${S.data.products.length||''}</div><div class="text-xs text-violet-900/60">Products</div></div></div></div></div>`;
+  const body={general,appearance,seo,social,notify,backup}[t]||general;
+  const preview=`<div class="card p-5"><div class="font-extrabold mb-3">Website Preview</div><div class="rounded-2xl overflow-hidden border border-violet-100"><div class="px-4 py-3 text-white font-extrabold" style="background:#6200EA">${esc(sv('storeName','ZAVRA Online Store'))}</div><div class="p-4 text-sm"><div class="font-bold">${esc(sv('tagline','Shop Smart, Live Better'))}</div><div class="text-violet-900/60 mt-1">${esc(sv('address','') )}</div></div></div></div>`;
+  return head('Website Settings &amp; General Configuration','Manage your website settings, appearance and general configuration',`<button class="btn2" onclick="toast('Reset will be added with this step')">↺ Reset Settings</button><button class="btn" onclick="saveSettings()">💾 Save Changes</button>`)+tabs+`<div class="grid grid-cols-1 xl:grid-cols-3 gap-4"><div class="xl:col-span-2">${body}</div>${preview}</div>`;
+};
+async function saveSettings(){const d={};document.querySelectorAll('[data-k]').forEach(el=>{d[el.dataset.k]=el.type==='number'?(Number(el.value)||0):el.value});document.querySelectorAll('[data-t]').forEach(el=>{d[el.dataset.t]=el.checked});
+  try{await db.collection('store').doc('site').set(d,{merge:true});S.data.site={...(S.data.site||{}),...d};render();toast('Settings saved')}catch(err){toast('Save failed: '+(err.message||err.code))}}
+async function loadSite(){try{const s=await db.collection('store').doc('site').get();S.data.site=s.exists?s.data():{}}catch(e){S.data.site={}}}
+async function blAdd(){const f=$('#banFile').files[0];if(!f)return toast('Choose an image first');
+  try{const bmp=await createImageBitmap(f);let max=1920,q=.82,src='';
+    for(let i=0;i<4;i++){const k=Math.min(1,max/Math.max(bmp.width,bmp.height));const c=document.createElement('canvas');c.width=Math.round(bmp.width*k);c.height=Math.round(bmp.height*k);c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);src=c.toDataURL('image/jpeg',q);if(src.length<850000)break;max=Math.round(max*.7);q-=.1}
+    if(src.length>=850000)return toast('Image still too large, use a smaller file');
+    const d={name:f.name,src,w:bmp.width,h:bmp.height,created:new Date().toISOString()};
+    const r=await db.collection('banners').add(d);S.data.banners.unshift({_id:r.id,...d});logActivity('Uploaded banner: '+f.name);render();toast('Banner saved')}
+  catch(err){toast('Upload failed: '+(err.message||err.code))}}
+async function blDel(id){if(!confirm('Delete this banner?'))return;try{await db.collection('banners').doc(id).delete();S.data.banners=S.data.banners.filter(x=>x._id!==id);render();toast('Banner deleted')}catch(err){toast('Delete failed')}}
+function globalSearch(q){S.q=q;if(S.view==='products'||S.view==='orders'||S.view==='customers')render()}
+
+/* ============ RENDER ============ */
+function render(){
+  if(!$('#app')||$('#app').style.display==='none')return;
+  renderSide();
+  const n=S.data.activity.length;$('#bellCount').textContent=n;$('#bellCount').classList.toggle('hidden',!n);
+  const fn=PAGES[S.view]||PAGES.dashboard;
+  $('#main').innerHTML=fn();
+}
+</script>
+</body>
+</html>
